@@ -1,0 +1,97 @@
+# Render — the API and the Better Auth sidecar, built from the Dockerfile.
+#
+#   New > Blueprint, point Render at this repository, Apply.
+#
+# Render injects $PORT; the container reads it (see api/server.py). The
+# storefront lives on Vercel and proxies /api/* here, so BACKEND_URL is a
+# Vercel setting, not a Render one.
+#
+# On the free plan there is no persistent disk: the JSON stores lose their
+# state when the instance is redeployed or spun down after idle. Set
+# DATABASE_URL (Supabase) to keep it, or uncomment `disk` on a paid plan.
+services:
+  - type: web
+    name: mamyat
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    numInstances: 1
+    healthCheckPath: /api/health
+    envVars:
+      # Render routes to 0.0.0.0:$PORT; a 127.0.0.1 bind answers "connection
+      # refused" forever.
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_DIR
+        value: /data
+      # The Vercel host that calls this API. Used for CORS and the reset links
+      # that leave the process by email.
+      - key: PUBLIC_BASE_URL
+        value: https://mamyatelie.com
+      - key: CORS_ORIGINS
+        value: https://mamyatelie.com,https://www.mamyatelie.com
+      # Social login: the Node sidecar is bound to loopback and reached only
+      # through this Python process.
+      - key: BETTER_AUTH_URL
+        value: https://mamyatelie.com
+      - key: BETTER_AUTH_TRUSTED_ORIGINS
+        value: https://mamyatelie.com,https://www.mamyatelie.com
+      - key: BETTER_AUTH_APP_NAME
+        value: Mamy Ateliê
+      - key: BETTER_AUTH_INTERNAL_PORT
+        value: "3100"
+      - key: BETTER_AUTH_INTERNAL_URL
+        value: http://127.0.0.1:3100
+      # Secrets travel through the dashboard (or scripts/render_deploy.py from
+      # the local gitignored .env.* files). `sync: false` keeps them out of
+      # the repository; never put a value here.
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: CUSTOMER_SESSION_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: TURNSTILE_SITE_KEY
+        sync: false
+      - key: TURNSTILE_HOSTNAMES
+        sync: false
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_CUSTOMER_ID
+        sync: false
+      - key: ASAAS_WEBHOOK_SECRET
+        sync: false
+      - key: ASAAS_BASE_URL
+        value: https://sandbox.asaas.com/api/v3
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: BETTER_AUTH_BRIDGE_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: FACEBOOK_CLIENT_ID
+        sync: false
+      - key: FACEBOOK_CLIENT_SECRET
+        sync: false
+      - key: APPLE_CLIENT_ID
+        sync: false
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY
+        sync: false
+    # disk:            # paid plans only
+    #   name: mamyat-data
+    #   mountPath: /data
+    #   sizeGB: 1

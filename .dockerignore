@@ -1,0 +1,23 @@
+# Keep the build context to what the image actually needs.
+.git/
+.gitignore
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# the frontend is built and deployed by Vercel, not copied into this image
+web/
+
+# dependencies are installed inside their own stage from the lockfiles
+**/node_modules/
+
+# local secrets and runtime state never enter an image layer
+.env
+.env.*
+!.env.example
+data/runtime/
+.tmp/
+
+docs/
+decisions/

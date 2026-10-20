@@ -1,0 +1,40 @@
+# fly.toml — one machine, one volume, one process.
+#
+# Stamp it:  python -m foundry.deploy fly --set SERVICE={{SERVICE}} \
+#                --health {{HEALTH_PATH}} --port {{PORT}} --out .
+#
+# Fly runs the Dockerfile in the repository. The [mounts] section is what makes
+# Fly the right host for a service that keeps state on disk: unlike Render's
+# free plan, a Fly volume survives a restart and a redeploy.
+app = '{{SERVICE}}'
+primary_region = '{{REGION}}'
+
+[build]
+
+[env]
+  HOST = '0.0.0.0'
+  PORT = '{{PORT}}'
+  DATA_DIR = '{{VOLUME_PATH}}'
+
+[[mounts]]
+  source = '{{VOLUME}}'
+  destination = '{{VOLUME_PATH}}'
+
+[http_service]
+  internal_port = {{PORT}}
+  force_https = true
+  # scale to zero when idle; the volume stays, so the ledger is still there
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '{{HEALTH_PATH}}'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'

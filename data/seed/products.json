@@ -1,0 +1,205 @@
+[
+  {
+    "name": "Bolsa Aurora",
+    "slug": "bolsa-aurora",
+    "description": "Bolsa de crochê feita ponto a ponto em fio de algodão trançado. Tem alça firme, forro interno em algodão cru e um bolso pequeno para o celular. Cada peça sai um pouco diferente da outra — é isso que faz dela sua.",
+    "details": ["Crochê em fio de algodão", "Forro de algodão cru", "35 × 28 × 10 cm", "Lavar à mão, secar na sombra"],
+    "category": "Bolsas",
+    "price": "189,00",
+    "compare_at": "219,00",
+    "images": ["/produtos/bolsa-aurora.svg"],
+    "variants": [
+      {"id": "areia", "name": "Areia", "sku": "AUR-AREIA", "stock": 4},
+      {"id": "terracota", "name": "Terracota", "sku": "AUR-TERRA", "stock": 3},
+      {"id": "oliva", "name": "Verde-oliva", "sku": "AUR-OLIVA", "stock": 2}
+    ],
+    "featured": true,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Bolsa Tarde de Sol",
+    "slug": "bolsa-tarde-de-sol",
+    "description": "Uma bolsa de palha com acabamento em crochê e alça de couro ecológico. Pensada para o fim de semana: cabe livro, garrafa d'água e o que mais o dia pedir.",
+    "details": ["Palha natural trançada", "Alça de couro ecológico", "38 × 30 × 12 cm", "Limpar com pano úmido"],
+    "category": "Bolsas",
+    "price": "229,00",
+    "images": ["/produtos/bolsa-tarde-de-sol.svg"],
+    "variants": [
+      {"id": "natural", "name": "Natural", "sku": "SOL-NAT", "stock": 2},
+      {"id": "preto", "name": "Preto", "sku": "SOL-PRETO", "stock": 2}
+    ],
+    "featured": true,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Coelhinho Nino",
+    "slug": "coelhinho-nino",
+    "description": "Amigurumi de coelhinho com orelhas compridas e laço de algodão. Feito com fio antialérgico e enchimento siliconado, pensado para bebês e para quem ainda guarda um bichinho de estimação no coração.",
+    "details": ["Fio 100% algodão antialérgico", "Enchimento siliconado", "22 cm de altura", "Costura reforçada, sem peças soltas"],
+    "category": "Amigurumis",
+    "price": "98,00",
+    "images": ["/produtos/coelhinho-nino.svg"],
+    "variants": [
+      {"id": "rosa", "name": "Rosa", "sku": "NINO-ROSA", "stock": 5},
+      {"id": "azul", "name": "Azul", "sku": "NINO-AZUL", "stock": 5}
+    ],
+    "featured": true,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Urso Bento",
+    "slug": "urso-bento",
+    "description": "Urso de crochê com gravatinha e bolso nas costas para guardar um bilhete. Um presente de nascimento que fica na família por muitos anos.",
+    "details": ["Fio 100% algodão", "26 cm de altura", "Lavável à mão", "Bilhete personalizado incluso"],
+    "category": "Amigurumis",
+    "price": "118,00",
+    "images": ["/produtos/urso-bento.svg"],
+    "variants": [
+      {"id": "caramelo", "name": "Caramelo", "sku": "BENTO-CAR", "stock": 4}
+    ],
+    "featured": false,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Toalha Bordada Lavanda",
+    "slug": "toalha-lavanda",
+    "description": "Toalha de lavabo em algodão com um raminho de lavanda bordado à mão. Um detalhe pequeno que muda a cara da pia de visita.",
+    "details": ["Algodão 100%", "Bordado feito à mão", "45 × 70 cm", "Lavar à mão ou máquina em ciclo delicado"],
+    "category": "Bordados",
+    "price": "74,00",
+    "images": ["/produtos/toalha-lavanda.svg"],
+    "variants": [
+      {"id": "branca", "name": "Branca", "sku": "LAV-BRANCA", "stock": 8},
+      {"id": "cru", "name": "Cru", "sku": "LAV-CRU", "stock": 5}
+    ],
+    "featured": false,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Sousplats Renda",
+    "slug": "sousplats-renda",
+    "description": "Jogo de quatro sousplats em crochê fino, com desenho de renda inspirado nas toalhas de mesa da minha avó. Deixam a mesa posta mesmo quando o almoço é simples.",
+    "details": ["Jogo com 4 unidades", "Crochê em fio de algodão", "38 cm de diâmetro", "Lavar à mão"],
+    "category": "Casa",
+    "price": "156,00",
+    "images": ["/produtos/sousplats-renda.svg"],
+    "variants": [
+      {"id": "cru", "name": "Cru", "sku": "RENDA-CRU", "stock": 3},
+      {"id": "off-white", "name": "Off-white", "sku": "RENDA-OFF", "stock": 2}
+    ],
+    "featured": true,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Nécessaire Pétala",
+    "slug": "necessaire-petala",
+    "description": "Nécessaire forrada com zíper reforçado e puxador de crochê. Cabe maquiagem, cabos ou o estojo de bordado — escolha o que ela vai carregar.",
+    "details": ["Algodão com forro impermeável", "Zíper reforçado", "24 × 15 × 7 cm", "Lavar à mão"],
+    "category": "Acessórios",
+    "price": "89,00",
+    "images": ["/produtos/necessaire-petala.svg"],
+    "variants": [
+      {"id": "rosa-seco", "name": "Rosa seco", "sku": "PET-ROSA", "stock": 6},
+      {"id": "areia", "name": "Areia", "sku": "PET-AREIA", "stock": 4}
+    ],
+    "featured": false,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Kit Enxoval Mini",
+    "slug": "kit-enxoval-mini",
+    "description": "Kit de enxoval com manta, fralda de boca bordada e um coelhinho pequeno. Feito sob encomenda em cores neutras, para durar até depois da primeira infância.",
+    "details": ["Manta 80 × 100 cm", "2 fraldas de boca bordadas", "1 amigurumi pequeno", "Produção em 10 dias úteis"],
+    "category": "Kits",
+    "price": "245,00",
+    "images": ["/produtos/kit-enxoval-mini.svg"],
+    "variants": [
+      {"id": "neutro", "name": "Neutro", "sku": "KIT-NEUTRO", "stock": 2},
+      {"id": "rosa", "name": "Rosa", "sku": "KIT-ROSA", "stock": 1},
+      {"id": "azul", "name": "Azul", "sku": "KIT-AZUL", "stock": 1}
+    ],
+    "featured": false,
+    "active": true,
+    "made_to_order": true,
+    "production_days": 10
+  },
+  {
+    "name": "Chaveiro Coração",
+    "slug": "chaveiro-coracao",
+    "description": "Chaveiro de crochê em formato de coração, com argola de metal. Um presente pequeno para lembrar alguém que a gente gosta — ou para a chave de casa nova.",
+    "details": ["Crochê em algodão", "Argola de metal niquelado", "6 cm", "Escolha a cor no carrinho"],
+    "category": "Acessórios",
+    "price": "22,00",
+    "images": ["/produtos/chaveiro-coracao.svg"],
+    "variants": [
+      {"id": "vermelho", "name": "Vermelho", "sku": "COR-VERM", "stock": 20},
+      {"id": "cru", "name": "Cru", "sku": "COR-CRU", "stock": 20}
+    ],
+    "featured": false,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Caminho de Mesa Jardim",
+    "slug": "caminho-mesa-jardim",
+    "description": "Caminho de mesa em linho com bordado de flores silvestres nas pontas. Para a mesa do café da manhã que merece uma pausa.",
+    "details": ["Linho misto", "Bordado à mão", "35 × 120 cm", "Lavar à mão e passar do lado avesso"],
+    "category": "Casa",
+    "price": "168,00",
+    "images": ["/produtos/caminho-mesa-jardim.svg"],
+    "variants": [
+      {"id": "off-white", "name": "Off-white", "sku": "JARDIM-OFF", "stock": 3}
+    ],
+    "featured": false,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  },
+  {
+    "name": "Encomenda Personalizada",
+    "slug": "encomenda-personalizada",
+    "description": "Tem uma ideia, uma cor ou uma lembrança que quer transformar em peça? Escolha esta encomenda e conte os detalhes no campo de observações. O ateliê responde para combinar prazo, fio e valor final.",
+    "details": ["Peça feita sob medida", "Orçamento confirmado por mensagem", "Prazo a combinar (a partir de 14 dias)", "Sinal de 50% para iniciar"],
+    "category": "Encomendas",
+    "price": "150,00",
+    "images": ["/produtos/encomenda-personalizada.svg"],
+    "variants": [
+      {"id": "a-combinar", "name": "A combinar", "sku": "ENC-COM", "stock": 0}
+    ],
+    "featured": true,
+    "active": true,
+    "made_to_order": true,
+    "production_days": 14
+  },
+  {
+    "name": "Porta-copos Girassol",
+    "slug": "porta-copos-girassol",
+    "description": "Conjunto de quatro porta-copos redondos com borda de girassol. Alegram a mesa e protegem a madeira — e combinam com o café da tarde.",
+    "details": ["Jogo com 4 unidades", "Crochê em algodão", "11 cm de diâmetro", "Lavar à mão"],
+    "category": "Casa",
+    "price": "56,00",
+    "images": ["/produtos/porta-copos-girassol.svg"],
+    "variants": [
+      {"id": "amarelo", "name": "Amarelo", "sku": "GIR-AMAR", "stock": 10}
+    ],
+    "featured": false,
+    "active": true,
+    "made_to_order": false,
+    "production_days": 0
+  }
+]

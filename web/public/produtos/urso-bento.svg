@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="t">
+  <title id="t">Urso Bento de crochê</title>
+  <rect width="800" height="1000" fill="#f6eee6"/>
+  <circle cx="400" cy="540" r="280" fill="#f1e0d6"/>
+  <circle cx="285" cy="330" r="70" fill="#b98f6b"/>
+  <circle cx="515" cy="330" r="70" fill="#b98f6b"/>
+  <circle cx="285" cy="330" r="36" fill="#e0bfa4"/>
+  <circle cx="515" cy="330" r="36" fill="#e0bfa4"/>
+  <circle cx="400" cy="480" r="165" fill="#c9a27f"/>
+  <path d="M250 690c0-115 70-185 150-185s150 70 150 185v55c0 78-62 125-150 125s-150-47-150-125z" fill="#c9a27f"/>
+  <ellipse cx="400" cy="800" rx="110" ry="85" fill="#e0bfa4"/>
+  <circle cx="342" cy="465" r="18" fill="#3d2b24"/>
+  <circle cx="458" cy="465" r="18" fill="#3d2b24"/>
+  <circle cx="347" cy="459" r="5" fill="#fffdfa"/>
+  <circle cx="463" cy="459" r="5" fill="#fffdfa"/>
+  <ellipse cx="400" cy="540" rx="50" ry="38" fill="#e0bfa4"/>
+  <path d="M386 526h28l-14 18z" fill="#3d2b24"/>
+  <path d="M400 544v12M400 556c-10 12-24 12-32 0M400 556c10 12 24 12 32 0" fill="none" stroke="#3d2b24" stroke-width="5" stroke-linecap="round"/>
+  <path d="M400 690l-52 26 12 46 40-24 40 24 12-46z" fill="#6b7f5e"/>
+  <circle cx="400" cy="742" r="16" fill="#55684a"/>
+  <path d="M292 706c-34 10-46 44-20 62M508 706c34 10 46 44 20 62" fill="none" stroke="#b98f6b" stroke-width="12" stroke-linecap="round"/>
+</svg>

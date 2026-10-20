@@ -1,0 +1,35 @@
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# node — pruned between sessions; `npm ci` restores it
+node_modules/
+.next/
+npm-debug.log*
+tsconfig.tsbuildinfo
+
+# runtime stores. A deployment starts with its own data (DATA_DIR); locally
+# this holds orders, customers and the generated admin password.
+data/runtime/
+.tmp/
+
+# vercel link state (web/.vercel/) holds the project id — never committed
+.vercel/
+web/.vercel/
+
+# local env / credentials. The real files hold live keys and must never reach
+# the repository; `.env.example` is the only committed one.
+.env
+.env.*
+!.env.example
+!.env.template
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp

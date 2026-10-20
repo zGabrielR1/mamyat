@@ -1,0 +1,31 @@
+# Current task
+
+## Objective
+
+Ship `mamyatelie.com` from this tree: Vercel storefront, Render backend, Supabase
+Postgres, with the optional rails configured as the owner provides credentials.
+
+## Done
+
+- Backend, storefront, auth sidecar, migration, seed catalog, tests, docs,
+  Dockerfile, render.yaml, verify/smoke/deploy scripts.
+
+## Active
+
+1. Keep the admin panel and the API in lockstep: any new field or rule gets a
+   backend test in `api/tests/test_app.py` and a page in `web/app/admin`.
+2. Verify the local stack end to end after UI changes: `python scripts/dev.py`,
+   then create a category, a product and a customer from the panel.
+3. Run the full gate before shipping: `python scripts/verify.py`,
+   `npm run build`, `python scripts/smoke.py`.
+
+## Blocked on the owner
+
+- Supabase project URL / database password (or a dedicated project for the shop)
+- Asaas credentials (production or sandbox) + webhook registration
+- Resend domain verification for `mamyatelie.com`
+- Turnstile site/secret pair for the production hostnames
+- Google/Facebook/Apple OAuth client ids and secrets
+- The real domain pointed at Vercel, and `BACKEND_URL` set to the Render URL
+
+See `docs/needed-from-owner.md` for the exact list and where each value goes.

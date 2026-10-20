@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="t">
+  <title id="t">Toalha bordada Lavanda</title>
+  <rect width="800" height="1000" fill="#f6eee6"/>
+  <circle cx="170" cy="810" r="170" fill="#e8c9b8" opacity=".45"/>
+  <g>
+    <rect x="180" y="280" width="440" height="500" rx="18" fill="#fffdfa" stroke="#e7d9cc" stroke-width="4"/>
+    <rect x="212" y="312" width="376" height="436" rx="8" fill="none" stroke="#d8c4b4" stroke-width="3" stroke-dasharray="4 8"/>
+    <path d="M250 700h300" stroke="#c9a27f" stroke-width="5" opacity=".5"/>
+    <g transform="translate(400 500)">
+      <path d="M0 96V-70" stroke="#6b7f5e" stroke-width="7" stroke-linecap="round"/>
+      <path d="M0 60c-46-8-64-42-54-70M0 26c44-10 60-42 50-68" fill="none" stroke="#6b7f5e" stroke-width="6" stroke-linecap="round"/>
+      <g fill="#8b6fae">
+        <ellipse cx="-34" cy="16" rx="13" ry="20" transform="rotate(-28 -34 16)"/>
+        <ellipse cx="-16" cy="0" rx="12" ry="19" transform="rotate(-16 -16 0)"/>
+        <ellipse cx="4" cy="-6" rx="12" ry="19" transform="rotate(6 4 -6)"/>
+        <ellipse cx="24" cy="2" rx="12" ry="19" transform="rotate(24 24 2)"/>
+        <ellipse cx="40" cy="18" rx="12" ry="19" transform="rotate(38 40 18)"/>
+        <ellipse cx="-8" cy="34" rx="12" ry="19" transform="rotate(-6 -8 34)"/>
+        <ellipse cx="16" cy="34" rx="12" ry="19" transform="rotate(14 16 34)"/>
+      </g>
+      <path d="M0 -70c-12-20-4-38 10-44 8 16 4 34-10 44z" fill="#6b7f5e"/>
+    </g>
+    <path d="M240 740h80M480 740h80" stroke="#b4644a" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

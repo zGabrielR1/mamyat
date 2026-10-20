@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="t">
+  <title id="t">Chaveiro Coração de crochê</title>
+  <rect width="800" height="1000" fill="#f6eee6"/>
+  <circle cx="400" cy="520" r="250" fill="#f1e0d6" opacity=".7"/>
+  <g transform="translate(400 500)">
+    <circle cx="0" cy="-220" r="72" fill="none" stroke="#b9a58f" stroke-width="16"/>
+    <path d="M0 -148v90" stroke="#b9a58f" stroke-width="14" stroke-linecap="round"/>
+    <path d="M0 -58C-32-140-194-144-194-14c0 116 116 188 194 254 78-66 194-138 194-254 0-130-162-126-194-44z" fill="#b4644a"/>
+    <path d="M0 -58C-32-140-194-144-194-14c0 116 116 188 194 254 78-66 194-138 194-254 0-130-162-126-194-44z" fill="none" stroke="#944c37" stroke-width="6"/>
+    <g fill="none" stroke="#f6d9ce" stroke-width="4" opacity=".55">
+      <path d="M-150 10c-10 86 62 152 150 208M-110-34c-8 74 46 128 110 174M150 10c10 86-62 152-150 208"/>
+    </g>
+    <path d="M-64 -18c-8 18-2 34 14 42M64 -18c8 18 2 34-14 42" fill="none" stroke="#944c37" stroke-width="4" opacity=".6"/>
+  </g>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="t">
+  <title id="t">Bolsa Aurora de crochê</title>
+  <rect width="800" height="1000" fill="#f6eee6"/>
+  <circle cx="140" cy="170" r="120" fill="#e8c9b8" opacity=".55"/>
+  <circle cx="690" cy="830" r="180" fill="#e8c9b8" opacity=".4"/>
+  <path d="M290 420c0-120 55-190 110-190s110 70 110 190" fill="none" stroke="#3d2b24" stroke-width="26" stroke-linecap="round"/>
+  <path d="M250 420h300c20 0 35 16 33 36l-22 330c-2 22-20 39-42 39H281c-22 0-40-17-42-39l-22-330c-2-20 13-36 33-36z" fill="#c9a27f"/>
+  <path d="M250 420h300c20 0 35 16 33 36l-5 75H222l-5-75c-2-20 13-36 33-36z" fill="#b98f6b"/>
+  <g stroke="#8a6a5b" stroke-width="5" opacity=".5" fill="none">
+    <path d="M250 580h300M246 650h308M242 720h316"/>
+    <path d="M300 560v220M360 560v220M420 560v220M480 560v220M540 560v220"/>
+  </g>
+  <rect x="352" y="610" width="96" height="70" rx="18" fill="#3d2b24"/>
+  <rect x="365" y="623" width="70" height="44" rx="10" fill="#f6eee6" opacity=".2"/>
+  <circle cx="400" cy="645" r="6" fill="#e8c9b8"/>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="t">
+  <title id="t">Encomenda personalizada no ateliê</title>
+  <rect width="800" height="1000" fill="#f6eee6"/>
+  <circle cx="170" cy="810" r="160" fill="#e8c9b8" opacity=".45"/>
+  <g transform="translate(400 520)">
+    <circle cx="-90" cy="20" r="120" fill="#e7b7a6"/>
+    <g fill="none" stroke="#d98e76" stroke-width="5" opacity=".7">
+      <path d="M-186 60c30-70 78-104 156-110M-160 118c4-66 30-104 84-130M-90 -98c-30 44-42 92-36 148"/>
+    </g>
+    <path d="M-30 -60c70-50 150 10 130 86-14 54-72 70-118 58" fill="none" stroke="#b4644a" stroke-width="6" stroke-linecap="round"/>
+    <path d="M110 120l120 220" stroke="#c9a27f" stroke-width="16" stroke-linecap="round"/>
+    <path d="M232 340c10 16 8 28-4 34-12 6-24 2-30-8" fill="none" stroke="#c9a27f" stroke-width="12" stroke-linecap="round"/>
+    <g transform="rotate(-16)">
+      <rect x="30" y="130" width="280" height="150" rx="18" fill="#fffdfa" stroke="#e0cdbb" stroke-width="4"/>
+      <path d="M96 130v-22" stroke="#8a6a5b" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="96" cy="96" r="14" fill="none" stroke="#8a6a5b" stroke-width="5"/>
+      <path d="M130 180h150M130 215h110M130 250h80" stroke="#d8c4b4" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="44" cy="144" r="7" fill="#b4644a"/>
+    </g>
+    <g transform="translate(-40 250)">
+      <path d="M-100 90V-20" stroke="#8a6a5b" stroke-width="7" stroke-linecap="round"/>
+      <path d="M100 90V-20" stroke="#8a6a5b" stroke-width="7" stroke-linecap="round"/>
+      <path d="M-100 20c60 30 140 30 200 0" fill="none" stroke="#b4644a" stroke-width="6"/>
+    </g>
+  </g>
+</svg>

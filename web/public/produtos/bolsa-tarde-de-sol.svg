@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="t">
+  <title id="t">Bolsa Tarde de Sol de palha</title>
+  <rect width="800" height="1000" fill="#f6eee6"/>
+  <circle cx="640" cy="210" r="96" fill="#c9a227" opacity=".55"/>
+  <g stroke="#c9a227" stroke-width="10" stroke-linecap="round" opacity=".7">
+    <path d="M640 74v-38M640 346v38M764 210h38M478 210h38M728 122l27-27M552 298l-27 27M728 298l27 27M552 122l-27-27"/>
+  </g>
+  <path d="M300 430c0-100 45-160 100-160s100 60 100 160" fill="none" stroke="#6b4b34" stroke-width="22" stroke-linecap="round"/>
+  <path d="M232 430h336l44 340c3 24-15 45-39 45H227c-24 0-42-21-39-45z" fill="#d9b77e"/>
+  <g stroke="#b98f5b" stroke-width="6" opacity=".65" fill="none">
+    <path d="M232 500h336M232 570h336M232 640h336M232 710h336M232 780h336"/>
+    <path d="M300 430l-20 385M370 430l-10 385M440 430l10 385M510 430l20 385"/>
+  </g>
+  <path d="M232 430h336l6 48H226z" fill="#6b4b34"/>
+  <rect x="342" y="760" width="116" height="70" rx="14" fill="#b4644a"/>
+  <path d="M400 760v70" stroke="#f6eee6" stroke-width="4" opacity=".5"/>
+</svg>

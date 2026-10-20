@@ -1,0 +1,58 @@
+# Render — blueprint for a container service.
+#
+# Stamp it:  python -m foundry.deploy render --set SERVICE={{SERVICE}} \
+#                --health {{HEALTH_PATH}} --port {{PORT}} --out .
+#
+# Render builds the image itself from the Dockerfile in the repository, so
+# nothing has to be built or committed from a laptop first. Render injects
+# $PORT; do not hard-code the listen port here, read it in the app.
+#
+# On the free plan there is no persistent disk: a service that keeps state on
+# local disk (a JSONL ledger, uploaded files) loses it when the instance is
+# redeployed or spun down after idle. Uncomment the `disk:` block on a paid
+# plan to keep it.
+services:
+  - type: web
+    name: {{SERVICE}}
+    runtime: docker
+    dockerfilePath: {{DOCKERFILE}}
+    plan: {{PLAN}}
+    # one process, one writer: a JSONL ledger under a single lock, or SQLite,
+    # cannot survive two instances behind the same disk
+    numInstances: 1
+    healthCheckPath: {{HEALTH_PATH}}
+    envVars:
+      # HOST must be 0.0.0.0: Render routes to $PORT on the container's
+      # external interface, so a server bound to 127.0.0.1 answers
+      # "connection refused" forever
+      - key: HOST
+        value: 0.0.0.0
+      # secrets are NOT set here: a blueprint is committed. They reach the
+      # service through the Render API (`sync: false` marks a placeholder), so
+      # nothing sensitive ever lives in the repository.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      # Turnstile (foundry.turnstile): the secret is a real secret, the site
+      # key and the hostname allowlist are public but travel with it. A deploy
+      # without them simply does not gate the surface.
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: TURNSTILE_SITE_KEY
+        sync: false
+      - key: TURNSTILE_HOSTNAMES
+        sync: false
+      # Supabase Postgres (decision 0049 pattern): the backend's disk. Only
+      # DATABASE_URL is needed at runtime — the service role key stays on the
+      # laptop for migrations, and the anon key is unused when the storefront
+      # talks to the backend instead of Supabase directly. A deploy without it
+      # keeps files (or SQLite); with it, the Postgres seam arms itself.
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+    # disk:
+    #   name: {{SERVICE}}-data
+    #   mountPath: /data
+    #   sizeGB: 1

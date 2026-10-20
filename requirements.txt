@@ -1,0 +1,5 @@
+# The backend is stdlib-only until DATABASE_URL points at Postgres. These two
+# are the optional Supabase seam (`api/db.py`); without them the JSON stores
+# are used and nothing here is imported.
+SQLAlchemy>=2.0,<3
+psycopg[binary]>=3.2,<4
