@@ -199,7 +199,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-border/70 py-5">
         <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-muted-foreground md:flex-row">
-          <p>© {new Date().getFullYear()} Mamy Ateliê · CNPJ a informar</p>
+          <p>© {new Date().getFullYear()} Mamy Ateliê · CNPJ {config.store.cnpj || "a informar"}</p>
           <p>Pix à vista · Envio para todo o Brasil</p>
         </div>
       </div>

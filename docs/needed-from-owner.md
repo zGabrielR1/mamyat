@@ -47,9 +47,14 @@ Values belong in gitignored `.env*` files locally and in the hosting dashboard
 
 ## Store details
 
+- [x] contact email `taynaramelo45@gmail.com`
+- [x] WhatsApp `+55 47 99666-9607`
+- [x] Instagram `@atelieda_mamy`
+- [x] CNPJ `40.239.348/0001-50`
+- [ ] city/state and pickup address — the default city is still `São Paulo · SP`,
+      which does not match the 47 area code; confirm the atelier's real location
 - [ ] the admin password to set (`ADMIN_PASSWORD`, 8+ characters) — or keep the
         generated one from the first boot
-- [ ] WhatsApp number and Instagram handle for the footer/settings
 - [ ] pickup address and delivery estimate
 - [ ] real product photos (the seed ships SVG illustrations)
 - [ ] final prices, shipping fee and free-shipping threshold

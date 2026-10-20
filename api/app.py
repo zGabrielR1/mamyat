@@ -41,9 +41,10 @@ DEFAULT_SETTINGS = {
     "store_name": "Mamy Ateliê",
     "tagline": "Feito à mão, feito para durar.",
     "announcement": "Frete grátis acima de R$ 250 · Encomendas com carinho",
-    "email": "oi@mamyatelie.com",
-    "whatsapp": "",
-    "instagram": "@mamyatelie",
+    "email": "taynaramelo45@gmail.com",
+    "whatsapp": "+55 47 99666-9607",
+    "instagram": "@atelieda_mamy",
+    "cnpj": "40.239.348/0001-50",
     "city": "São Paulo · SP",
     "shipping_flat_minor": 1800,
     "free_shipping_minor": 25000,
@@ -61,6 +62,17 @@ DEFAULT_SETTINGS = {
 
 ALLOWED_SETTING_KEYS = frozenset(DEFAULT_SETTINGS)
 SOCIAL_ACTIONS = {"signup", "login", "checkout", "contact", "reset"}
+
+
+def normalise_cnpj(value: object) -> str:
+    """Digits only, formatted. Empty stays empty; a short value is refused."""
+    digits = re.sub(r"\D", "", str(value or ""))
+    if not digits:
+        return ""
+    if len(digits) != 14:
+        raise ValueError("CNPJ deve ter 14 dígitos")
+    return (f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/"
+            f"{digits[8:12]}-{digits[12:]}")
 
 
 class ApiError(Exception):
@@ -362,6 +374,7 @@ class App:
                 "email": stored.get("email", ""),
                 "whatsapp": stored.get("whatsapp", ""),
                 "instagram": stored.get("instagram", ""),
+                "cnpj": stored.get("cnpj", ""),
                 "city": stored.get("city", ""),
             },
             "shipping": {
@@ -948,6 +961,11 @@ class App:
                                    "invalid_setting") from None
             elif key in ("pickup_enabled",):
                 stored[key] = bool(value)
+            elif key == "cnpj":
+                try:
+                    stored[key] = normalise_cnpj(value)
+                except ValueError as exc:
+                    raise ApiError(400, str(exc), "invalid_setting") from None
             elif key == "categories":
                 try:
                     clean = clean_categories(value)

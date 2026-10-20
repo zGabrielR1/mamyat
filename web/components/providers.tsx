@@ -11,9 +11,10 @@ const DEFAULT_CONFIG: StoreConfig = {
     name: "Mamy Ateliê",
     tagline: "Feito à mão, feito para durar.",
     announcement: "Frete grátis acima de R$ 250 · Encomendas com carinho",
-    email: "oi@mamyatelie.com",
-    whatsapp: "",
-    instagram: "@mamyatelie",
+    email: "taynaramelo45@gmail.com",
+    whatsapp: "+55 47 99666-9607",
+    instagram: "@atelieda_mamy",
+    cnpj: "40.239.348/0001-50",
     city: "São Paulo · SP",
   },
   shipping: {

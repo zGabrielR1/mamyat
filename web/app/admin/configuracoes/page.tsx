@@ -30,6 +30,7 @@ type Settings = {
   email: string
   whatsapp: string
   instagram: string
+  cnpj: string
   city: string
   shipping_flat_minor: number
   free_shipping_minor: number
@@ -221,7 +222,11 @@ export default function AdminSettingsPage() {
             </div>
             <div>
               <Label htmlFor="instagram">Instagram</Label>
-              <Input id="instagram" value={form.instagram} onChange={(event) => set("instagram", event.target.value)} placeholder="@mamyatelie" />
+              <Input id="instagram" value={form.instagram} onChange={(event) => set("instagram", event.target.value)} placeholder="@atelieda_mamy" />
+            </div>
+            <div>
+              <Label htmlFor="cnpj">CNPJ</Label>
+              <Input id="cnpj" value={form.cnpj} onChange={(event) => set("cnpj", event.target.value)} placeholder="00.000.000/0000-00" />
             </div>
           </div>
         </section>

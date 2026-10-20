@@ -138,6 +138,10 @@ class AppTestCase(unittest.TestCase):
         self.assertEqual(health["service"], "mamyat")
         config = self.app.public_config()
         self.assertEqual(config["store"]["name"], "Mamy Ateliê")
+        self.assertEqual(config["store"]["email"], "taynaramelo45@gmail.com")
+        self.assertEqual(config["store"]["whatsapp"], "+55 47 99666-9607")
+        self.assertEqual(config["store"]["instagram"], "@atelieda_mamy")
+        self.assertEqual(config["store"]["cnpj"], "40.239.348/0001-50")
         self.assertIn("flat_minor", config["shipping"])
         self.assertEqual(config["payment"]["mode"], "demo")
         self.assertTrue(config["turnstile"]["enabled"])
@@ -413,6 +417,11 @@ class AppTestCase(unittest.TestCase):
         self.assertFalse(result["settings"]["pickup_enabled"])
         with self.assertRaises(ApiError):
             self.app.admin_update_settings({"shipping_flat_minor": "x"})
+
+        cnpj = self.app.admin_update_settings({"cnpj": "40239348000150"})
+        self.assertEqual(cnpj["settings"]["cnpj"], "40.239.348/0001-50")
+        with self.assertRaises(ApiError):
+            self.app.admin_update_settings({"cnpj": "123"})
 
     def test_contact_is_stored_and_mailed(self) -> None:
         answer = self.app.contact({"name": "Cliente", "email": "c@example.com",

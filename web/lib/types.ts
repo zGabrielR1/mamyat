@@ -40,6 +40,7 @@ export type StoreConfig = {
     email: string
     whatsapp: string
     instagram: string
+    cnpj: string
     city: string
   }
   shipping: {
