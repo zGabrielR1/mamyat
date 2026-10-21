@@ -1,0 +1,6 @@
+project_id = "mamyat"
+
+# Authentication is enforced in the function by the private Worker origin
+# secret, followed by the customer's/admin's application session token.
+[functions.shop-api]
+verify_jwt = false

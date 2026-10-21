@@ -1,45 +1,22 @@
 # Current task
 
-Ship Mamy Ateli? on Cloudflare + Supabase, preserving previous UI changes.
-Do not deploy to Render or Vercel.
+Deploy the free Cloudflare Workers + Supabase launch. No domain purchase,
+paid plan, Render, Vercel, or Container deployment is authorized.
 
-## Implemented
+Implemented: private free Supabase project/database, 12 seeded products,
+private Edge API deployed, free Worker allocated, static export and proxy,
+Turnstile Fetch verification, transaction-safe reservations, admin/account API.
+29 isolated HTTP checks and last-unit concurrency checks passed. Static
+production build and free Worker dry-run passed.
 
-- Cloudflare Worker, custom-domain routes, full-stack container and supervisor.
-- Repeatable Resend/DNS/Turnstile setup and checked deployment commands.
-- Stable session signing and Postgres session registry for container restarts.
-- Production configuration guard and database-aware health.
-- Turnstile lifecycle cleanup, theme and refresh after failed submissions.
-- Resend domain mamyatelie.com created; sender/application secrets saved
-  privately in .env.local. Sending DNS verification remains pending.
-- 19 official Cloudflare skills installed locally; project MCP config added
-  but not authenticated in this session.
+Live: https://mamyat.henriquealveslohrayne.workers.dev
+Wrangler OAuth completed, assets deployed, Turnstile hostname updated. Public
+health/catalog/product/order-shell/admin routes and real admin login passed.
+Turnstile loader patch deployed; a real automatically issued token passed the
+server gate and missing-token login was rejected. Final browser navigation
+checks passed. Launch work complete for the free/demo scope.
 
-## External prerequisites
+Deferred: custom domain and Resend sender verification. Email is disabled and
+password recovery directs customers to the atelier. Payments remain demo.
 
-- Cloudflare API token/account ID or accessible signed-in browser.
-- Supabase database URL for this shop.
-- Docker engine or authorized Cloudflare build infrastructure.
-- Domain ownership/registration and nameserver delegation.
-- Sending DNS verification and production Turnstile keys after access arrives.
-
-Run npm run setup:services, npm run deploy:check, then npm run deploy after
-these are available. See docs/deploy.md. Without Asaas keys payments stay demo.
-
-## Live provisioning update (2026-10-21)
-
-- Playwright browser connection is working; Cloudflare and Supabase signed in.
-- Created dedicated Supabase project mamyat (oiplbtukraykycifwccn), S?o Paulo,
-  Free plan; public Data API disabled, automatic RLS enabled.
-- Applied initial security migration through TLS session pooler; confirmed RLS.
-- Initialized production App against Supabase and seeded 12 catalog products.
-  Postgres/Resend/Turnstile service configuration health is true.
-- Created managed Cloudflare widget mamyat-storefront, apex + www; keys saved privately in .env.turnstile.
-- Database URL/password saved privately in .env.supabase; management account ID
-  recorded in .env.local. No secrets staged in git.
-- Cloudflare is on Free; Containers needs Workers Paid ($5/month plus usage).
-- Domain available at Cloudflare: $10.46 registration and $10.46/year renewal.
-- Asked owner to approve these costs and sign into the GitLab OAuth tab for
-  zGabrielR1/mamyat remote builds. Waiting for response.
-- Existing legacy GitLab PAT was rejected (401); GitHub git auth unavailable.
-- No shop Worker/container or custom domain has been deployed yet.
+See docs/deploy.md and decisions/0010-free-workers-supabase-edge.md.

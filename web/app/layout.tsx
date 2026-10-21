@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   },
   description:
     "Bolsas, amigurumis e bordados feitos à mão no ateliê da Mamy, em Concórdia, Santa Catarina. Peças únicas, encomendas personalizadas e envio para todo o Brasil.",
-  metadataBase: new URL("https://mamyatelie.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mamyat.henriquealveslohrayne.workers.dev"),
   openGraph: {
     title: "Mamy Ateliê",
     description: "Feito à mão, feito para durar. Ateliê em Concórdia · SC.",
-    url: "https://mamyatelie.com",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://mamyat.henriquealveslohrayne.workers.dev",
     siteName: "Mamy Ateliê",
     locale: "pt_BR",
     type: "website",

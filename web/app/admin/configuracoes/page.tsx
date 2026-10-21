@@ -433,8 +433,8 @@ export default function AdminSettingsPage() {
             <Badge variant="outline">captcha: {health.captcha}</Badge>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Se pagamento estiver “demo”, configure as variáveis do Asaas no Render.
-            Se email estiver “console”, configure o Resend para enviar de verdade.
+            Pagamento “demo” significa que nenhuma cobrança real será feita.
+            Para enviar emails, verifique o remetente no Resend e ative a entrega nas configurações do serviço.
           </p>
         </section>
       ) : null}

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+
 import { Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export default function OrderLookupPage() {
-  const router = useRouter()
+
   const [number, setNumber] = React.useState("")
   const [email, setEmail] = React.useState("")
 
@@ -24,7 +24,7 @@ export default function OrderLookupPage() {
         className="mt-6 space-y-4"
         onSubmit={(event) => {
           event.preventDefault()
-          router.push(`/pedido/${encodeURIComponent(number.trim().toUpperCase())}?email=${encodeURIComponent(email.trim())}`)
+          window.location.assign(`/pedido/${encodeURIComponent(number.trim().toUpperCase())}?email=${encodeURIComponent(email.trim())}`)
         }}
       >
         <div>

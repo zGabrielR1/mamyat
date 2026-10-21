@@ -2,11 +2,20 @@
   "name": "mamyat-cloudflare",
   "private": true,
   "scripts": {
-    "deploy": "node scripts/cloudflare.mjs deploy",
-    "deploy:check": "node scripts/cloudflare.mjs check",
+    "deploy": "node scripts/deploy_free.mjs",
+    "deploy:check": "node scripts/deploy_free.mjs check",
     "setup:services": "node scripts/cloudflare.mjs setup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "deploy:container": "node scripts/cloudflare.mjs deploy",
+    "test:free": "node scripts/test_free_api.mjs"
   },
-  "dependencies": { "@cloudflare/containers": "^0.3.7" },
-  "devDependencies": { "wrangler": "^4.151.3", "typescript": "^5.7.2", "@cloudflare/workers-types": "^5.20261021.1" }
+  "dependencies": {
+    "@cloudflare/containers": "^0.3.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261021.1",
+    "postgres": "^3.4.7",
+    "typescript": "^5.7.2",
+    "wrangler": "^4.151.3"
+  }
 }

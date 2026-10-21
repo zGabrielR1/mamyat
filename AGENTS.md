@@ -42,9 +42,11 @@ mode; with Asaas configured it sells for real.
    `python scripts/smoke.py --base …` against a live server.
 6. Rebuild the frontend (`cd web; npm.cmd run build`) whenever modifying
    `web/app`; typecheck alone is not enough for a deploy.
-7. Deploy: `npm run setup:services`, `npm run deploy:check`, then
-   `npm run deploy`. Hosting is Cloudflare Worker + Container and Supabase;
-   do not deploy to Render or Vercel. See `docs/deploy.md`.
+7. Free launch: `npm run deploy:check`, then `npm run deploy`. Use
+   `wrangler.free.jsonc`: Workers static assets plus Supabase Edge Functions.
+   Do not purchase a domain, upgrade plans, or deploy Containers, Render or
+   Vercel. See `docs/deploy.md` and decision 0010. The Edge API lives in
+   `supabase/functions/shop-api/`; keep its commerce rules aligned with Python.
 
 ## Local stack
 

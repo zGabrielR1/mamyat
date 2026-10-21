@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +9,7 @@ import { brl, cn } from "@/lib/utils"
 export function ProductCard({ product, className }: { product: Product; className?: string }) {
   const soldOut = product.available <= 0
   return (
-    <Link
+    <a
       href={`/produto/${product.slug}`}
       className={cn("group flex flex-col", className)}
       aria-label={`Ver ${product.name}`}
@@ -56,6 +55,6 @@ export function ProductCard({ product, className }: { product: Product; classNam
           ) : null}
         </div>
       </div>
-    </Link>
+    </a>
   )
 }

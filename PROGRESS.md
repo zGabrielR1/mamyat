@@ -1,3 +1,30 @@
+# Free launch status (2026-10-21)
+
+This section supersedes the historical Container/cost approval notes below.
+The owner deferred the domain and selected free plans only.
+
+- Free Supabase project created in Sao Paulo, RLS enabled, Data API disabled.
+- Seeded 12 products and initial admin; private credentials stay ignored.
+- Supabase shop-api Edge Function deployed, version 2, origin authenticated.
+- Free Cloudflare Worker mamyat allocated with workers.dev subdomain.
+- Static storefront export, free Worker API proxy and repeatable deploy script.
+- Turnstile Fetch verification, hostname/action checks and token refresh.
+- Resend Fetch recovery implementation; disabled live until sender verification.
+- Atomic SQL reservations/idempotency and persistent rate limits.
+- 31 Python tests, frontend types and static production build passed.
+- 29 isolated Edge HTTP contracts plus last-stock concurrency, duplicate-line,
+  direct-origin and Resend recovery/single-use/session-revocation tests passed.
+- Free Worker dry-run passed. No domain purchase or paid plan enabled.
+- Wrangler OAuth completed; live static storefront and API deployed.
+- Turnstile hostname updated to the workers.dev address.
+- Public health/catalog/product/order-shell/admin routes and admin login passed.
+- Browser product/cart/checkout and admin navigation passed.
+- Turnstile loader regression fixed; live automatic token accepted server-side,
+  missing token rejected. Supabase Edge v4 and Worker d6d721c8 deployed.
+- Launch complete at https://mamyat.henriquealveslohrayne.workers.dev.
+
+## Historical development log
+
 # Progress
 
 ## Backend

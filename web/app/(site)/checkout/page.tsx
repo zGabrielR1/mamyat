@@ -22,7 +22,7 @@ import { brl, digits, formatCep, formatCpf, formatPhone } from "@/lib/utils"
 const UF = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"]
 
 function Checkout() {
-  const router = useRouter()
+
   const params = useSearchParams()
   const { items, hydrated, clear } = useCart()
   const { customer } = useAuth()
@@ -139,7 +139,7 @@ function Checkout() {
       })
       clear()
       window.sessionStorage.setItem(`mamyat.order.${order.number}`, form.email)
-      router.push(`/pedido/${order.number}?email=${encodeURIComponent(form.email)}`)
+      window.location.assign(`/pedido/${order.number}?email=${encodeURIComponent(form.email)}`)
     } catch (failure) {
       const message = failure instanceof ApiFailure ? failure.message : "Não foi possível fechar o pedido"
       setError(message)
@@ -202,7 +202,7 @@ function Checkout() {
               <div>
                 <Label htmlFor="cpf">CPF do titular</Label>
                 <Input id="cpf" value={form.cpf} onChange={set("cpf")} required inputMode="numeric" placeholder="000.000.000-00" />
-                <p className="mt-1 text-xs text-muted-foreground">Necessário para emitir a cobrança Pix.</p>
+                <p className="mt-1 text-xs text-muted-foreground">{config.payment.mode === "demo" ? "Use dados de teste neste ambiente de demonstração." : "Necessário para emitir a cobrança Pix."}</p>
               </div>
             </div>
           </section>
@@ -311,9 +311,9 @@ function Checkout() {
             <div className="mt-4 flex items-start gap-3 rounded-lg border border-primary bg-secondary/30 p-4">
               <CreditCard className="mt-0.5 size-4" />
               <div>
-                <p className="text-sm font-medium">Pix à vista</p>
+                <p className="text-sm font-medium">{config.payment.mode === "demo" ? "Pedido de demonstração" : "Pix à vista"}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  O QR Code aparece na próxima tela. O pedido é confirmado automaticamente.
+                  {config.payment.mode === "demo" ? "Nenhuma cobrança será emitida. Para uma compra real, fale com o ateliê pelo WhatsApp." : "O QR Code aparece na próxima tela. O pedido é confirmado automaticamente."}
                 </p>
               </div>
               <Check className="ml-auto size-4" />
@@ -406,13 +406,13 @@ function Checkout() {
             </label>
             {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
             <Button type="submit" size="lg" className="mt-4 w-full" disabled={submitting || loadingQuote || !quote?.ok}>
-              {submitting ? <><Loader2 className="size-4 animate-spin" /> Gerando Pix...</> : "Fechar pedido e gerar Pix"}
+              {submitting ? <><Loader2 className="size-4 animate-spin" /> Criando pedido...</> : config.payment.mode === "demo" ? "Criar pedido de demonstração" : "Fechar pedido e gerar Pix"}
             </Button>
             {config.payment.mode === "demo" ? (
               <Badge variant="outline" className="mt-3 w-full justify-center py-1">Modo demonstração</Badge>
             ) : null}
             <p className="mt-3 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
-              Ao fechar, reservamos as peças por 30 minutos enquanto o Pix é pago.
+              {config.payment.mode === "demo" ? "A reserva de demonstração expira em 30 minutos." : "Ao fechar, reservamos as peças por 30 minutos enquanto o Pix é pago."}
             </p>
           </div>
         </aside>

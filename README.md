@@ -4,22 +4,25 @@
 checkout, Pix, order tracking, customer accounts, social sign-in, and an admin
 panel for products, orders, customers, contacts and store settings.
 
-Cloudflare Workers routes the Next.js storefront and Python API to a Cloudflare
-Container, alongside the auth sidecar. Supabase Postgres holds persistent state;
-local development can use JSON files.
+The current free launch uses Cloudflare Workers static assets and a private
+Supabase Edge Function backed by Postgres. Public address:
+https://mamyat.henriquealveslohrayne.workers.dev. No domain was purchased.
+Payments stay demo; email delivery and social sign-in are disabled. The Python
+stack remains available for local development. See [deployment](docs/deploy.md)
+and [free-tier decision](decisions/0010-free-workers-supabase-edge.md).
 
 ## Stack
 
 | Concern | What is used |
 |---|---|
 | Storefront | Next.js 16 (App Router), React 19, Tailwind 4, shadcn/ui |
-| API | Python 3.14, stdlib `http.server`, integer centavos |
+| API | Supabase Edge (Deno/Fetch); Python stdlib for local development |
 | Storage | Supabase Postgres via SQLAlchemy/psycopg; JSON files when unset |
 | Auth | username/email + CPF, signed `ms1` sessions; Better Auth for Google/Facebook/Apple |
 | Captcha | Cloudflare Turnstile on signup, login, reset, contact, checkout |
 | Payments | Asaas Pix with webhook confirmation; demo rail when unconfigured |
-| Email | Resend; console mailer when unconfigured |
-| Deploy | Cloudflare Worker + Container, Supabase Postgres |
+| Email | Resend Fetch; disabled live until sender verification |
+| Deploy | Free Workers static assets + Supabase Edge/Postgres |
 
 ## Quick start
 

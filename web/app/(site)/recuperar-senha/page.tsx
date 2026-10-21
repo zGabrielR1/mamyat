@@ -41,10 +41,12 @@ export default function ForgotPasswordPage() {
       <p className="text-[0.7rem] uppercase tracking-[0.25em] text-muted-foreground">Acesso</p>
       <h1 className="mt-2 font-serif text-4xl">Recuperar senha</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Informe o email da conta. Se ele estiver cadastrado, enviamos um link para criar uma nova senha.
+        {config.features.email === false ? "Para recuperar o acesso, fale com o ateliê pelo WhatsApp na página de contato." : "Informe o email da conta. Se ele estiver cadastrado, enviamos um link para criar uma nova senha."}
       </p>
 
-      {sent ? (
+      {config.features.email === false ? (
+        <Button asChild className="mt-6"><Link href="/contato">Falar com o ateliê</Link></Button>
+      ) : sent ? (
         <div className="mt-6 rounded-xl border bg-card p-5 text-sm">
           <p className="font-medium">Confira sua caixa de entrada</p>
           <p className="mt-2 text-muted-foreground">

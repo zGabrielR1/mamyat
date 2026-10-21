@@ -1,4 +1,4 @@
-import Link from "next/link"
+
 
 import { Button } from "@/components/ui/button"
 
@@ -43,10 +43,10 @@ export default function CustomOrdersPage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link href="/produto/encomenda-personalizada">Abrir uma encomenda</Link>
+              <a href="/produto/encomenda-personalizada">Abrir uma encomenda</a>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/contato">Falar com o ateliê</Link>
+              <a href="/contato">Falar com o ateliê</a>
             </Button>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
@@ -100,10 +100,10 @@ export default function CustomOrdersPage() {
             Encomendas personalizadas não entram na política de troca por
             arrependimento, mas qualquer defeito de confecção é resolvido pelo
             ateliê. Veja os detalhes nas{" "}
-            <Link href="/politicas" className="underline">políticas</Link>.
+            <a href="/politicas" className="underline">políticas</a>.
           </p>
           <Button asChild className="mt-5">
-            <Link href="/produto/encomenda-personalizada">Começar minha encomenda</Link>
+            <a href="/produto/encomenda-personalizada">Começar minha encomenda</a>
           </Button>
         </div>
       </section>

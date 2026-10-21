@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, Truck } from "lucide-react"
 
 import { api } from "@/lib/api"
@@ -64,10 +64,10 @@ export default function CartPage() {
         </p>
         <div className="mt-6 flex gap-3">
           <Button asChild>
-            <Link href="/loja">Ver a loja</Link>
+            <a href="/loja">Ver a loja</a>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/encomendas">Encomendar</Link>
+            <a href="/encomendas">Encomendar</a>
           </Button>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function CartPage() {
           <ul className="divide-y border-y">
             {items.map((item) => (
               <li key={`${item.productId}:${item.variantId}`} className="flex gap-4 py-5">
-                <Link
+                <a
                   href={`/produto/${item.slug}`}
                   className="size-24 shrink-0 overflow-hidden rounded-lg bg-secondary sm:size-28"
                 >
@@ -99,13 +99,13 @@ export default function CartPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.image} alt={item.name} className="size-full object-cover" />
                   ) : null}
-                </Link>
+                </a>
                 <div className="flex min-w-0 flex-1 flex-col">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <Link href={`/produto/${item.slug}`} className="font-medium hover:underline">
+                      <a href={`/produto/${item.slug}`} className="font-medium hover:underline">
                         {item.name}
-                      </Link>
+                      </a>
                       <p className="mt-0.5 text-xs text-muted-foreground">{item.variantName}</p>
                     </div>
                     <button
@@ -250,9 +250,9 @@ export default function CartPage() {
           ) : null}
 
           <Button asChild size="lg" className="mt-6 w-full" disabled={loading || !quote?.ok}>
-            <Link href={`/checkout${applied ? `?cupom=${encodeURIComponent(applied)}` : ""}`}>
+            <a href={`/checkout${applied ? `?cupom=${encodeURIComponent(applied)}` : ""}`}>
               Ir para o checkout <ArrowRight className="size-4" />
-            </Link>
+            </a>
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             Pagamento por Pix · ambiente {config.payment.environment}

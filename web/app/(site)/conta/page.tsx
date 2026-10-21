@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+
 import { useRouter } from "next/navigation"
 import { ChevronRight, LogOut, Package } from "lucide-react"
 import { toast } from "sonner"
@@ -148,13 +148,13 @@ export default function AccountPage() {
               <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                 Quando você fizer um pedido, ele aparece aqui com o status do ateliê.
               </p>
-              <Button asChild className="mt-5"><Link href="/loja">Ver a loja</Link></Button>
+              <Button asChild className="mt-5"><a href="/loja">Ver a loja</a></Button>
             </div>
           ) : (
             <ul className="space-y-3">
               {orders.map((order) => (
                 <li key={order.number}>
-                  <Link
+                  <a
                     href={`/pedido/${order.number}${order.email ? `?email=${encodeURIComponent(order.email)}` : ""}`}
                     className="flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40"
                   >
@@ -170,7 +170,7 @@ export default function AccountPage() {
                     </div>
                     <p className="text-sm font-medium">{order.total || brl(order.total_minor)}</p>
                     <ChevronRight className="size-4 text-muted-foreground" />
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>

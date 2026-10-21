@@ -1,3 +1,9 @@
+# Free launch update
+
+Free Supabase project and Cloudflare Worker are already created. No Docker,
+paid plan or domain is required for this launch. Wrangler OAuth and publication are complete. Custom domain,
+verified email sender and real payments are deferred. Historical checklist:
+
 # Needed from the owner
 
 Everything below is optional for a local demo and required for a real launch.

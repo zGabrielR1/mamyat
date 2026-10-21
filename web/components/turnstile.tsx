@@ -8,7 +8,6 @@ declare global {
       render: (element: HTMLElement, options: Record<string, unknown>) => string
       reset: (widget?: string) => void
       remove: (widget?: string) => void
-      ready: (callback: () => void) => void
     }
   }
 }
@@ -55,10 +54,12 @@ export function Turnstile({ siteKey, action, onToken, className, resetKey = 0 }:
       })
     }
 
-    const onLoad = () => window.turnstile?.ready(render)
+    // Async scripts are ready at their load event. Turnstile.ready() is only
+    // valid for a synchronous script and throws with async/defer.
+    const onLoad = render
     let script: HTMLScriptElement | null = null
     if (window.turnstile) {
-      window.turnstile.ready(render)
+      render()
     } else {
       script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null
       if (!script) {

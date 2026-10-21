@@ -1,3 +1,11 @@
+# Current free hosting
+
+The free production path is Cloudflare Workers static assets -> authenticated
+Supabase Edge Function -> private Supabase Postgres. See
+[decision 0010](decisions/0010-free-workers-supabase-edge.md) for transactions,
+auth and disabled rails. The Python architecture below describes the local
+stack and optional future Container runtime.
+
 # Architecture
 
 Cloudflare is the production host (decision 0009). One Worker routes `/api/*`

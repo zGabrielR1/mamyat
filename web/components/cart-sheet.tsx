@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -42,14 +42,14 @@ export function CartSheet() {
                 Quando uma peça encontrar você, ela aparece aqui.
               </p>
               <Button asChild onClick={() => setOpen(false)}>
-                <Link href="/loja">Ver a loja</Link>
+                <a href="/loja">Ver a loja</a>
               </Button>
             </div>
           ) : (
             <ul className="space-y-5">
               {items.map((item) => (
                 <li key={`${item.productId}:${item.variantId}`} className="flex gap-3">
-                  <Link
+                  <a
                     href={`/produto/${item.slug}`}
                     onClick={() => setOpen(false)}
                     className="size-20 shrink-0 overflow-hidden rounded-lg bg-secondary"
@@ -58,17 +58,17 @@ export function CartSheet() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.image} alt={item.name} className="size-full object-cover" />
                     ) : null}
-                  </Link>
+                  </a>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <Link
+                        <a
                           href={`/produto/${item.slug}`}
                           onClick={() => setOpen(false)}
                           className="text-sm font-medium hover:underline"
                         >
                           {item.name}
-                        </Link>
+                        </a>
                         <p className="text-xs text-muted-foreground">{item.variantName}</p>
                       </div>
                       <button
@@ -127,10 +127,10 @@ export function CartSheet() {
               <Separator />
               <div className="grid gap-2">
                 <Button asChild size="lg" onClick={() => setOpen(false)}>
-                  <Link href="/checkout">Fechar pedido</Link>
+                  <a href="/checkout">Fechar pedido</a>
                 </Button>
                 <Button asChild variant="outline" onClick={() => setOpen(false)}>
-                  <Link href="/carrinho">Ver a sacola</Link>
+                  <a href="/carrinho">Ver a sacola</a>
                 </Button>
               </div>
             </div>

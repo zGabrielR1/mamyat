@@ -58,6 +58,7 @@ export type StoreConfig = {
     coupons: boolean
     guest_checkout: boolean
     social_login: boolean
+    email?: boolean
   }
 }
 
