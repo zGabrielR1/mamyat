@@ -35,6 +35,7 @@ function Checkout() {
   const [submitting, setSubmitting] = React.useState(false)
   const [cepLoading, setCepLoading] = React.useState(false)
   const [captcha, setCaptcha] = React.useState("")
+  const [captchaVersion, setCaptchaVersion] = React.useState(0)
   const [accepted, setAccepted] = React.useState(false)
   const [error, setError] = React.useState("")
   const idempotency = React.useRef<string>("")
@@ -142,6 +143,8 @@ function Checkout() {
     } catch (failure) {
       const message = failure instanceof ApiFailure ? failure.message : "Não foi possível fechar o pedido"
       setError(message)
+      setCaptcha("")
+      setCaptchaVersion((value) => value + 1)
       toast.error(message)
       setSubmitting(false)
     }
@@ -350,7 +353,7 @@ function Checkout() {
                 <span>{method === "pickup" ? "Retirada" : quote?.shipping_minor === 0 ? "Grátis" : brl(quote?.shipping_minor ?? 0)}</span>
               </div>
               {quote?.discount_minor ? (
-                <div className="flex justify-between text-emerald-700"><span>Cupom</span><span>− {brl(quote.discount_minor)}</span></div>
+                <div className="flex justify-between text-emerald-700 dark:text-emerald-400"><span>Cupom</span><span>− {brl(quote.discount_minor)}</span></div>
               ) : null}
               <Separator className="my-3" />
               <div className="flex items-baseline justify-between">
@@ -383,7 +386,7 @@ function Checkout() {
 
           <div className="rounded-xl border bg-card p-5">
             {config.turnstile.enabled ? (
-              <Turnstile
+              <Turnstile resetKey={captchaVersion}
                 siteKey={config.turnstile.site_key}
                 action="checkout"
                 onToken={setCaptcha}

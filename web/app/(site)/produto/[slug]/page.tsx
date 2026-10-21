@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ProductCard } from "@/components/product-card"
-import { brl, cn } from "@/lib/utils"
+import { WhatsAppIcon } from "@/components/icons"
+import { brl, cn, formatWhatsapp, whatsappHref } from "@/lib/utils"
 
 export default function ProductPage() {
   const params = useParams<{ slug: string }>()
@@ -219,6 +220,24 @@ export default function ProductPage() {
               {soldOut ? "Esgotado" : product.made_to_order ? "Encomendar" : "Adicionar à sacola"}
             </Button>
           </div>
+
+          {config.store.whatsapp ? (
+            <p className="mt-4 text-xs text-muted-foreground">
+              Dúvida sobre esta peça?{" "}
+              <a
+                href={whatsappHref(
+                  config.store.whatsapp,
+                  `Olá! Vim pelo site e tenho uma dúvida sobre a peça ${product.name}.`,
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-foreground underline decoration-primary/50 underline-offset-4 hover:decoration-primary"
+              >
+                <WhatsAppIcon className="size-3.5" />
+                fale no WhatsApp {formatWhatsapp(config.store.whatsapp)}
+              </a>
+            </p>
+          ) : null}
 
           <div className="mt-6 grid gap-3 rounded-xl bg-secondary/50 p-4 text-xs text-muted-foreground">
             <p className="flex items-center gap-2">

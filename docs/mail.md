@@ -6,7 +6,7 @@ nothing in the shop calls a provider directly.
 
 ## Configure
 
-`.env.resend` (local) or Render environment (hosted):
+`.env.resend` (local) or Cloudflare Worker secrets (hosted):
 
 ```
 RESEND_API_KEY=re_…
@@ -59,3 +59,7 @@ reset link uses `PUBLIC_BASE_URL`, never a request header.
 | `"mail": "console"` in health | no `RESEND_API_KEY`, or no sender |
 | Resend 403 | `MAIL_FROM` domain is not verified |
 | Reset link points at localhost | `PUBLIC_BASE_URL` unset on the host |
+
+Production refuses missing service configuration; the unconfigured fallback
+applies only to local development. `npm run setup:services` provisions these
+services from gitignored `.env.local` and Cloudflare account credentials.

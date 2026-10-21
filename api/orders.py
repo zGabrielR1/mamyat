@@ -72,7 +72,7 @@ class Orders:
             "pickup_enabled": bool(stored.get("pickup_enabled", True)),
             "delivery_days": str(stored.get("delivery_days", "3 a 7")),
             "pickup_address": str(stored.get("pickup_address",
-                                            "Retirada combinada em São Paulo")),
+                                            "Retirada combinada em Concórdia/SC")),
             "coupons": stored.get("coupons", {}),
         }
 

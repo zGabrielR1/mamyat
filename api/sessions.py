@@ -168,15 +168,18 @@ class CustomerSessions:
 class SessionRegistry:
     """Live rows, so a logout actually logs one device out."""
 
-    def __init__(self, path: str, *, max_per_customer: int = 20) -> None:
+    def __init__(self, path: str, *, max_per_customer: int = 20, store=None) -> None:
         self.path = path
+        self.store = store
         self.lock = threading.RLock()
         self.max_per_customer = max(1, int(max_per_customer))
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        if not os.path.exists(path):
+        if store is None and not os.path.exists(path):
             self._write({})
 
     def _read(self) -> dict:
+        if self.store is not None:
+            return self.store.read()
         try:
             with open(self.path, "r", encoding="utf-8") as handle:
                 data = json.load(handle)
@@ -186,10 +189,22 @@ class SessionRegistry:
         return rows if isinstance(rows, dict) else {}
 
     def _write(self, rows: dict) -> None:
+        if self.store is not None:
+            self.store.write(rows)
+            return
         tmp = self.path + ".tmp"
         with open(tmp, "w", encoding="utf-8") as handle:
             json.dump({"sessions": rows}, handle, ensure_ascii=False, indent=2)
         os.replace(tmp, self.path)
+
+    def _update(self, mutate):
+        if self.store is not None:
+            return self.store.update(mutate)
+        with self.lock:
+            rows = self._read()
+            result = mutate(rows)
+            self._write(rows)
+            return result
 
     @staticmethod
     def _exp(row: dict) -> int:
@@ -207,8 +222,7 @@ class SessionRegistry:
     def record(self, session: CustomerSession, *, user_agent: str = "",
                ip: str = "", now: float | None = None) -> None:
         instant = int(time.time() if now is None else now)
-        with self.lock:
-            rows = self._read()
+        def record(rows):
             self._prune(rows, instant)
             mine = sorted(((sid, row) for sid, row in rows.items()
                            if isinstance(row, dict) and
@@ -226,7 +240,7 @@ class SessionRegistry:
                 "user_agent": str(user_agent or "")[:200],
                 "ip": str(ip or "")[:64],
             }
-            self._write(rows)
+        self._update(record)
 
     def alive(self, session: CustomerSession) -> bool:
         instant = int(time.time())
@@ -237,24 +251,17 @@ class SessionRegistry:
             return row.get("customer") == session.customer_id
 
     def revoke(self, session_id: str) -> bool:
-        with self.lock:
-            rows = self._read()
-            if rows.pop(str(session_id or ""), None) is None:
-                return False
-            self._write(rows)
-            return True
+        return self._update(lambda rows: rows.pop(str(session_id or ""), None) is not None)
 
     def revoke_customer(self, customer_id: str) -> int:
-        with self.lock:
-            rows = self._read()
+        def revoke(rows):
             dead = [sid for sid, row in rows.items()
                     if isinstance(row, dict) and
                     row.get("customer") == customer_id]
             for sid in dead:
                 rows.pop(sid, None)
-            if dead:
-                self._write(rows)
             return len(dead)
+        return self._update(revoke)
 
 
 def derive_secret(source: str) -> str:

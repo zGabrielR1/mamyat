@@ -22,6 +22,7 @@ export default function SignupPage() {
     password: "", confirm: "",
   })
   const [captcha, setCaptcha] = React.useState("")
+  const [captchaVersion, setCaptchaVersion] = React.useState(0)
   const [accepted, setAccepted] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState("")
@@ -66,6 +67,8 @@ export default function SignupPage() {
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Não foi possível criar a conta")
     } finally {
+      setCaptcha("")
+      setCaptchaVersion((value) => value + 1)
       setBusy(false)
     }
   }
@@ -138,7 +141,7 @@ export default function SignupPage() {
           />
         </div>
         {config.turnstile.enabled ? (
-          <Turnstile siteKey={config.turnstile.site_key} action="signup" onToken={setCaptcha} />
+          <Turnstile resetKey={captchaVersion} siteKey={config.turnstile.site_key} action="signup" onToken={setCaptcha} />
         ) : null}
         <label className="flex items-start gap-2 text-xs text-muted-foreground">
           <input

@@ -1,31 +1,45 @@
 # Current task
 
-## Objective
+Ship Mamy Ateli? on Cloudflare + Supabase, preserving previous UI changes.
+Do not deploy to Render or Vercel.
 
-Ship `mamyatelie.com` from this tree: Vercel storefront, Render backend, Supabase
-Postgres, with the optional rails configured as the owner provides credentials.
+## Implemented
 
-## Done
+- Cloudflare Worker, custom-domain routes, full-stack container and supervisor.
+- Repeatable Resend/DNS/Turnstile setup and checked deployment commands.
+- Stable session signing and Postgres session registry for container restarts.
+- Production configuration guard and database-aware health.
+- Turnstile lifecycle cleanup, theme and refresh after failed submissions.
+- Resend domain mamyatelie.com created; sender/application secrets saved
+  privately in .env.local. Sending DNS verification remains pending.
+- 19 official Cloudflare skills installed locally; project MCP config added
+  but not authenticated in this session.
 
-- Backend, storefront, auth sidecar, migration, seed catalog, tests, docs,
-  Dockerfile, render.yaml, verify/smoke/deploy scripts.
+## External prerequisites
 
-## Active
+- Cloudflare API token/account ID or accessible signed-in browser.
+- Supabase database URL for this shop.
+- Docker engine or authorized Cloudflare build infrastructure.
+- Domain ownership/registration and nameserver delegation.
+- Sending DNS verification and production Turnstile keys after access arrives.
 
-1. Keep the admin panel and the API in lockstep: any new field or rule gets a
-   backend test in `api/tests/test_app.py` and a page in `web/app/admin`.
-2. Verify the local stack end to end after UI changes: `python scripts/dev.py`,
-   then create a category, a product and a customer from the panel.
-3. Run the full gate before shipping: `python scripts/verify.py`,
-   `npm run build`, `python scripts/smoke.py`.
+Run npm run setup:services, npm run deploy:check, then npm run deploy after
+these are available. See docs/deploy.md. Without Asaas keys payments stay demo.
 
-## Blocked on the owner
+## Live provisioning update (2026-10-21)
 
-- Supabase project URL / database password (or a dedicated project for the shop)
-- Asaas credentials (production or sandbox) + webhook registration
-- Resend domain verification for `mamyatelie.com`
-- Turnstile site/secret pair for the production hostnames
-- Google/Facebook/Apple OAuth client ids and secrets
-- The real domain pointed at Vercel, and `BACKEND_URL` set to the Render URL
-
-See `docs/needed-from-owner.md` for the exact list and where each value goes.
+- Playwright browser connection is working; Cloudflare and Supabase signed in.
+- Created dedicated Supabase project mamyat (oiplbtukraykycifwccn), S?o Paulo,
+  Free plan; public Data API disabled, automatic RLS enabled.
+- Applied initial security migration through TLS session pooler; confirmed RLS.
+- Initialized production App against Supabase and seeded 12 catalog products.
+  Postgres/Resend/Turnstile service configuration health is true.
+- Created managed Cloudflare widget mamyat-storefront, apex + www; keys saved privately in .env.turnstile.
+- Database URL/password saved privately in .env.supabase; management account ID
+  recorded in .env.local. No secrets staged in git.
+- Cloudflare is on Free; Containers needs Workers Paid ($5/month plus usage).
+- Domain available at Cloudflare: $10.46 registration and $10.46/year renewal.
+- Asked owner to approve these costs and sign into the GitLab OAuth tab for
+  zGabrielR1/mamyat remote builds. Waiting for response.
+- Existing legacy GitLab PAT was rejected (401); GitHub git auth unavailable.
+- No shop Worker/container or custom domain has been deployed yet.

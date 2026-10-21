@@ -39,4 +39,7 @@ check:
 	$(PY) scripts/verify.py
 
 deploy-check:
-	$(PY) scripts/render_deploy.py --check
+	$(NPM) run deploy:check
+
+deploy:
+	$(NPM) run deploy

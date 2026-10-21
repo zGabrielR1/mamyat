@@ -18,11 +18,12 @@ type TurnstileProps = {
   action: string
   onToken: (token: string) => void
   className?: string
+  resetKey?: number
 }
 
 const SCRIPT_ID = "cf-turnstile-script"
 
-export function Turnstile({ siteKey, action, onToken, className }: TurnstileProps) {
+export function Turnstile({ siteKey, action, onToken, className, resetKey = 0 }: TurnstileProps) {
   const container = React.useRef<HTMLDivElement>(null)
   const widget = React.useRef<string>("")
   const callback = React.useRef(onToken)
@@ -31,6 +32,7 @@ export function Turnstile({ siteKey, action, onToken, className }: TurnstileProp
   React.useEffect(() => {
     if (!siteKey) return
     let cancelled = false
+    callback.current("")
 
     const render = () => {
       if (cancelled || !container.current || !window.turnstile) return
@@ -44,18 +46,21 @@ export function Turnstile({ siteKey, action, onToken, className }: TurnstileProp
       widget.current = window.turnstile.render(container.current, {
         sitekey: siteKey,
         action,
-        theme: "light",
+        theme: "auto",
         language: "pt-BR",
         callback: (token: string) => callback.current(token),
         "expired-callback": () => callback.current(""),
         "error-callback": () => callback.current(""),
+        "timeout-callback": () => callback.current(""),
       })
     }
 
+    const onLoad = () => window.turnstile?.ready(render)
+    let script: HTMLScriptElement | null = null
     if (window.turnstile) {
       window.turnstile.ready(render)
     } else {
-      let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null
+      script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null
       if (!script) {
         script = document.createElement("script")
         script.id = SCRIPT_ID
@@ -64,11 +69,12 @@ export function Turnstile({ siteKey, action, onToken, className }: TurnstileProp
         script.defer = true
         document.head.appendChild(script)
       }
-      script.addEventListener("load", () => window.turnstile?.ready(render), { once: true })
+      script.addEventListener("load", onLoad, { once: true })
     }
 
     return () => {
       cancelled = true
+      script?.removeEventListener("load", onLoad)
       if (widget.current && window.turnstile) {
         try {
           window.turnstile.remove(widget.current)
@@ -78,7 +84,7 @@ export function Turnstile({ siteKey, action, onToken, className }: TurnstileProp
         widget.current = ""
       }
     }
-  }, [siteKey, action])
+  }, [siteKey, action, resetKey])
 
   if (!siteKey) return null
   return <div ref={container} className={className} />

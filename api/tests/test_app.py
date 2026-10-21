@@ -142,9 +142,21 @@ class AppTestCase(unittest.TestCase):
         self.assertEqual(config["store"]["whatsapp"], "+55 47 99666-9607")
         self.assertEqual(config["store"]["instagram"], "@atelieda_mamy")
         self.assertEqual(config["store"]["cnpj"], "40.239.348/0001-50")
+        self.assertEqual(config["store"]["city"], "Concórdia · SC")
+        self.assertIn("Concórdia/SC", config["shipping"]["pickup_address"])
         self.assertIn("flat_minor", config["shipping"])
         self.assertEqual(config["payment"]["mode"], "demo")
         self.assertTrue(config["turnstile"]["enabled"])
+
+    def test_legacy_location_is_migrated(self) -> None:
+        current = self.app.settings_store.read()
+        current["city"] = "São Paulo · SP"
+        current["pickup_address"] = "Retirada combinada com o ateliê, São Paulo/SP"
+        self.app.settings_store.write(current)
+        self.app._seed_settings()
+        config = self.app.public_config()
+        self.assertEqual(config["store"]["city"], "Concórdia · SC")
+        self.assertIn("Concórdia/SC", config["shipping"]["pickup_address"])
 
     def test_catalog_is_seeded_and_has_availability(self) -> None:
         products = self.app.list_products()

@@ -15,6 +15,7 @@ export default function ForgotPasswordPage() {
   const config = useConfig()
   const [email, setEmail] = React.useState("")
   const [captcha, setCaptcha] = React.useState("")
+  const [captchaVersion, setCaptchaVersion] = React.useState(0)
   const [busy, setBusy] = React.useState(false)
   const [sent, setSent] = React.useState(false)
   const [error, setError] = React.useState("")
@@ -29,6 +30,8 @@ export default function ForgotPasswordPage() {
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Não foi possível enviar agora")
     } finally {
+      setCaptcha("")
+      setCaptchaVersion((value) => value + 1)
       setBusy(false)
     }
   }
@@ -63,7 +66,7 @@ export default function ForgotPasswordPage() {
             />
           </div>
           {config.turnstile.enabled ? (
-            <Turnstile siteKey={config.turnstile.site_key} action="reset" onToken={setCaptcha} />
+            <Turnstile resetKey={captchaVersion} siteKey={config.turnstile.site_key} action="reset" onToken={setCaptcha} />
           ) : null}
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button type="submit" size="lg" className="w-full" disabled={busy}>

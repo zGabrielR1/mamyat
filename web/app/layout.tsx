@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -18,11 +19,11 @@ export const metadata: Metadata = {
     template: "%s · Mamy Ateliê",
   },
   description:
-    "Bolsas, amigurumis e bordados feitos à mão no ateliê da Mamy. Peças únicas, encomendas personalizadas e envio para todo o Brasil.",
+    "Bolsas, amigurumis e bordados feitos à mão no ateliê da Mamy, em Concórdia, Santa Catarina. Peças únicas, encomendas personalizadas e envio para todo o Brasil.",
   metadataBase: new URL("https://mamyatelie.com"),
   openGraph: {
     title: "Mamy Ateliê",
-    description: "Feito à mão, feito para durar.",
+    description: "Feito à mão, feito para durar. Ateliê em Concórdia · SC.",
     url: "https://mamyatelie.com",
     siteName: "Mamy Ateliê",
     locale: "pt_BR",
@@ -30,11 +31,19 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbf7f2" },
+    { media: "(prefers-color-scheme: dark)", color: "#17110f" },
+  ],
+};
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={cn("font-sans", geist.variable)}>
+    <html lang="pt-BR" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} antialiased`}>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

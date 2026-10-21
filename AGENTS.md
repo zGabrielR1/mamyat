@@ -15,7 +15,7 @@ mode; with Asaas configured it sells for real.
 | `decisions/` | Decision log, one file per decision |
 | `api/` | The service: `server.py` routing, `app.py` wiring, domain modules |
 | `api/db.py` | `SqlStore`/`JsonStore` factory — the only storage seam |
-| `api/tests/` | The backend suite (24 tests, no network) |
+| `api/tests/` | The backend suite (25 tests, no network) |
 | `foundry/` | Vendored stdlib kit — email, Turnstile, password/session auth, Better Auth bridge. Source of truth: `projects/foundry/`; regenerate with its `scripts/vendor.py`. Never edit by hand |
 | `auth-server/` | The stateless Better Auth process (TypeScript at runtime via Node): Google/Facebook/Apple |
 | `api/betterauth_proxy.py` | Same-origin loopback proxy to the sidecar |
@@ -42,8 +42,9 @@ mode; with Asaas configured it sells for real.
    `python scripts/smoke.py --base …` against a live server.
 6. Rebuild the frontend (`cd web; npm.cmd run build`) whenever modifying
    `web/app`; typecheck alone is not enough for a deploy.
-7. Deploy: `python scripts/render_deploy.py --check`, then
-   `python scripts/render_deploy.py` (reads `.env*` and the git remote itself).
+7. Deploy: `npm run setup:services`, `npm run deploy:check`, then
+   `npm run deploy`. Hosting is Cloudflare Worker + Container and Supabase;
+   do not deploy to Render or Vercel. See `docs/deploy.md`.
 
 ## Local stack
 
@@ -62,3 +63,12 @@ mode; with Asaas configured it sells for real.
 - Every optional rail fails safe: no Asaas key means demo payments, no Resend
   key means console mail, no Turnstile secret means a no-op gate, no Better
   Auth credentials means the social buttons disappear.
+
+## Cloudflare production
+
+`wrangler.jsonc` routes both hostnames to `cloudflare/worker.ts`;
+`Dockerfile.cloudflare` packages Next standalone, Python, and Better Auth.
+`api/configuration.py` refuses production without persistent Postgres, stable
+session signing, Resend sender and real Turnstile keys. Customer session
+registrations use the same Postgres store seam as other collections.
+Cloudflare account tokens remain in the provisioning process, never in the app.

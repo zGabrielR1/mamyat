@@ -4,8 +4,9 @@
 checkout, Pix, order tracking, customer accounts, social sign-in, and an admin
 panel for products, orders, customers, contacts and store settings.
 
-The frontend is Next.js on Vercel; the API and the auth sidecar run in one
-container on Render; state lives in Supabase Postgres (or JSON files locally).
+Cloudflare Workers routes the Next.js storefront and Python API to a Cloudflare
+Container, alongside the auth sidecar. Supabase Postgres holds persistent state;
+local development can use JSON files.
 
 ## Stack
 
@@ -18,7 +19,7 @@ container on Render; state lives in Supabase Postgres (or JSON files locally).
 | Captcha | Cloudflare Turnstile on signup, login, reset, contact, checkout |
 | Payments | Asaas Pix with webhook confirmation; demo rail when unconfigured |
 | Email | Resend; console mailer when unconfigured |
-| Deploy | Vercel (web), Render (Docker), Supabase (Postgres) |
+| Deploy | Cloudflare Worker + Container, Supabase Postgres |
 
 ## Quick start
 
@@ -50,7 +51,7 @@ cd web && npm run dev                # storefront, proxies /api to :8080
 python scripts/verify.py          # structure, compile, links, tests, typecheck
 python -m unittest discover -s api/tests
 cd web && npm run typecheck && npm run build
-python scripts/render_deploy.py --check
+npm run deploy:check
 ```
 
 End-to-end over HTTP against a running server:
@@ -66,3 +67,10 @@ python scripts/smoke.py --base http://127.0.0.1:8099 --admin-password ...
 Better Auth sidecar; `web/` the storefront; `supabase/` migrations;
 `docs/` runbooks; `decisions/` the decision log. Start with
 [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/deploy.md](docs/deploy.md).
+
+## Cloudflare deployment
+
+From the project root: `npm ci`, `npm run setup:services`,
+`npm run deploy:check`, then `npm run deploy`. See [deployment](docs/deploy.md).
+The setup command reads gitignored `.env.local`; production requires persistent
+Postgres, real Turnstile keys, and a verified Resend sending domain.

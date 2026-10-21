@@ -15,7 +15,7 @@ const DEFAULT_CONFIG: StoreConfig = {
     whatsapp: "+55 47 99666-9607",
     instagram: "@atelieda_mamy",
     cnpj: "40.239.348/0001-50",
-    city: "São Paulo · SP",
+    city: "Concórdia · SC",
   },
   shipping: {
     flat_minor: 1800,

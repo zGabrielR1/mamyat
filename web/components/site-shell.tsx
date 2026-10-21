@@ -3,7 +3,14 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import * as React from "react"
-import { Instagram, Mail, Menu, ShoppingBag, UserRound } from "lucide-react"
+import {
+  Instagram,
+  Mail,
+  MapPin,
+  Menu,
+  ShoppingBag,
+  UserRound,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,7 +24,9 @@ import {
 } from "@/components/ui/sheet"
 import { useAuth, useCart, useConfig } from "@/components/providers"
 import { CartSheet } from "@/components/cart-sheet"
-import { cn } from "@/lib/utils"
+import { WhatsAppIcon } from "@/components/icons"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { cn, formatWhatsapp, whatsappHref } from "@/lib/utils"
 
 const NAV = [
   { href: "/loja", label: "Loja" },
@@ -25,6 +34,8 @@ const NAV = [
   { href: "/sobre", label: "O ateliê" },
   { href: "/contato", label: "Contato" },
 ]
+
+const WHATSAPP_MESSAGE = "Olá! Vim pelo site do Mamy Ateliê e gostaria de falar com o ateliê."
 
 export function Wordmark({ className }: { className?: string }) {
   return (
@@ -48,6 +59,8 @@ export function SiteHeader() {
     setMenu(false)
   }, [pathname])
 
+  const whatsapp = config.store.whatsapp
+
   return (
     <>
       {config.store.announcement ? (
@@ -64,7 +77,7 @@ export function SiteHeader() {
                   <Menu className="size-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-80">
+              <SheetContent side="left" className="flex w-80 flex-col">
                 <SheetHeader>
                   <SheetTitle asChild>
                     <Link href="/" onClick={() => setMenu(false)}>
@@ -90,6 +103,28 @@ export function SiteHeader() {
                     {customer ? "Minha conta" : "Entrar"}
                   </Link>
                 </nav>
+                <div className="mt-auto space-y-3 border-t px-4 py-5">
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="size-4 shrink-0" />
+                    Ateliê em {config.store.city}
+                  </p>
+                  {whatsapp ? (
+                    <Button asChild variant="outline" className="w-full justify-start">
+                      <a
+                        href={whatsappHref(whatsapp, WHATSAPP_MESSAGE)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <WhatsAppIcon className="size-4" />
+                        {formatWhatsapp(whatsapp)}
+                      </a>
+                    </Button>
+                  ) : null}
+                  <div className="flex items-center justify-between rounded-lg border px-3 py-1.5">
+                    <span className="text-sm text-muted-foreground">Tema</span>
+                    <ThemeToggle />
+                  </div>
+                </div>
               </SheetContent>
             </Sheet>
           </div>
@@ -103,9 +138,12 @@ export function SiteHeader() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={pathname.startsWith(item.href) ? "page" : undefined}
                 className={cn(
-                  "transition-colors hover:text-foreground",
-                  pathname.startsWith(item.href) ? "text-foreground" : "text-muted-foreground",
+                  "relative py-1 transition-colors hover:text-foreground",
+                  pathname.startsWith(item.href)
+                    ? "text-foreground after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 {item.label}
@@ -114,6 +152,7 @@ export function SiteHeader() {
           </nav>
 
           <div className="flex items-center gap-1">
+            <ThemeToggle />
             <Button asChild variant="ghost" size="icon" aria-label="Minha conta">
               <Link href={customer ? "/conta" : "/entrar"}>
                 <UserRound className="size-5" />
@@ -143,16 +182,20 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   const config = useConfig()
+  const whatsapp = config.store.whatsapp
   return (
     <footer className="mt-24 border-t border-border bg-secondary/40">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1.1fr]">
         <div>
           <Wordmark />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
             {config.store.tagline} Peças de crochê, bordado e amigurumi feitas no ateliê,
             uma por uma.
           </p>
-          <p className="mt-4 text-sm text-muted-foreground">{config.store.city}</p>
+          <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="size-4 shrink-0" />
+            {config.store.city}
+          </p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Navegar</p>
@@ -174,7 +217,7 @@ export function SiteFooter() {
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Falar com a Mamy</p>
           <div className="mt-4 flex flex-col gap-3 text-sm">
             <a href={`mailto:${config.store.email}`} className="flex items-center gap-2 hover:underline">
-              <Mail className="size-4" /> {config.store.email}
+              <Mail className="size-4 shrink-0" /> {config.store.email}
             </a>
             <a
               href={`https://instagram.com/${config.store.instagram.replace("@", "")}`}
@@ -182,17 +225,23 @@ export function SiteFooter() {
               rel="noreferrer"
               className="flex items-center gap-2 hover:underline"
             >
-              <Instagram className="size-4" /> {config.store.instagram}
+              <Instagram className="size-4 shrink-0" /> {config.store.instagram}
             </a>
-            {config.store.whatsapp ? (
-              <a
-                href={`https://wa.me/${config.store.whatsapp.replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:underline"
-              >
-                WhatsApp
-              </a>
+            {whatsapp ? (
+              <div className="flex flex-col gap-2">
+                <a
+                  href={whatsappHref(whatsapp, WHATSAPP_MESSAGE)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 font-medium hover:underline"
+                >
+                  <WhatsAppIcon className="size-4 shrink-0" />
+                  {formatWhatsapp(whatsapp)}
+                </a>
+                <span className="text-xs text-muted-foreground">
+                  Atendimento pelo WhatsApp, de segunda a sexta.
+                </span>
+              </div>
             ) : null}
           </div>
         </div>

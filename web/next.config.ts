@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
 
-// The storefront is on Vercel; the API is on Render. In development the same
-// rewrite points at the local stdlib server, so every fetch can stay relative.
+// Cloudflare routes /api directly to Python. The rewrite also supports local
+// development and the standalone server within the container.
 const backend = (process.env.BACKEND_URL || "http://127.0.0.1:8080").replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: __dirname,
+  turbopack: { root: __dirname },
   poweredByHeader: false,
   async rewrites() {
     return [

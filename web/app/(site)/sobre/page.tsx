@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { MapPin } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
@@ -27,6 +28,12 @@ export default function AboutPage() {
             Não temos uma linha de produção: temos uma mesa, boa luz e o tempo
             que cada peça pede. É por isso que duas peças nunca saem exatamente
             iguais — e é isso que faz cada uma ser sua.
+          </p>
+          <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="flex size-8 items-center justify-center rounded-full bg-secondary">
+              <MapPin className="size-4" />
+            </span>
+            Ateliê em Concórdia, Santa Catarina · envio para todo o Brasil
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg"><Link href="/loja">Ver as peças</Link></Button>

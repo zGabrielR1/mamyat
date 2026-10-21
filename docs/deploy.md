@@ -1,121 +1,132 @@
-# Deploy
+# Deploy on Cloudflare + Supabase
 
-Three hosts, one tree:
+Production uses a Cloudflare Worker and Container, with Supabase Postgres.
+Render and Vercel scripts remain historical; do not run them for this launch.
+`Dockerfile.cloudflare` builds Next standalone, Python and the Better Auth
+sidecar. The Worker routes `/api/*` to Python and other paths to Next.
 
-| Piece | Host | What it runs |
-|---|---|---|
-| Storefront | Vercel | Next.js build from `web/` |
-| API + auth sidecar | Render | the `Dockerfile` (Python + Node) |
-| Database | Supabase | the migration in `supabase/migrations/` |
+## Current status (2026-10-21)
 
-Nothing has to be built on your machine first: Render builds the image from
-the repository, and Vercel builds the storefront from `web/`.
+- Resend accepted the API key in gitignored `.env.local`.
+- `mamyatelie.com` was created as a Resend sending domain in `sa-east-1`.
+- Sending DNS verification has not started: DNS account access is missing.
+- Sender, stable session secret and a strong initial admin password are saved
+  in `.env.local`. Secret values are not included in this document.
+- All 19 Cloudflare skills are installed locally in `.agents/skills`.
+- `.codex/config.toml` registers `https://mcp.cloudflare.com/mcp`; restart the
+  agent and authenticate the server to activate its tools. OAuth is not done.
+- No Cloudflare API/account credentials, Supabase database URL, connected
+  browser session, or Docker engine were available. No live shop was deployed.
+- Verisign RDAP returned HTTP 404 and Google public DNS returned NXDOMAIN
+  for mamyatelie.com on 2026-10-21. This suggests registration is still needed;
+  confirm availability and price with the registrar before purchase. A Resend
+  domain or Cloudflare zone does not purchase a domain.
 
-## 1. Database (Supabase)
+## Prerequisites
 
-1. Create a project. Copy the **pooler** connection string
-   (`postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres`).
-2. Open the SQL editor and paste
-   `supabase/migrations/20261020000000_mamyat.sql`, or run
-   `supabase db push` with the project linked.
-3. Confirm `select * from public.mamyat_health();` works with the service role.
+Use Node 22+, Python with `requirements.txt` installed, and a running Docker
+engine. Cloudflare Containers needs an eligible paid Workers account; check
+billing before deployment. Keep a single container instance until the order
+and reservation operations support multi-instance transactions. Container disk
+is disposable; JSON storage is forbidden in production.
 
-The app normalises `postgres://` and `postgresql://` to the psycopg dialect. Use
-the pooler on port 6543 for a Render web service.
+Add this shop's credentials to `.env.local` (never paste keys into chat):
 
-## 2. Backend (Render)
-
-Blueprint path:
-
-1. Push the repository to GitHub.
-2. Render → New → Blueprint → pick the repo. It reads `render.yaml`.
-3. Fill the `sync: false` variables in the dashboard (see the list below), or
-   run the script.
-
-Script path:
-
-```bash
-# ~/.render_api_key  (one line) and ~/.render_repo (one line), or env vars
-python scripts/render_deploy.py --check
-python scripts/render_deploy.py
+```dotenv
+CLOUDFLARE_API_TOKEN=<account-scoped token>
+CLOUDFLARE_ACCOUNT_ID=<account ID>
+DATABASE_URL=postgresql://postgres.PROJECT:PASSWORD@POOLER:5432/postgres?sslmode=require
 ```
 
-The script creates or updates the service, **merges** the environment (values
-from the gitignored `.env*` files, dashboard-only values preserved), starts a
-deploy and watches it. `--replace-env` resets the environment instead.
+Use this shop's Supabase session pooler (IPv4 accessible). URL-encode the DB
+password. The role must apply the checked-in migration. Do not reuse another
+application's project or credentials.
 
-Required variables:
+The Cloudflare token needs this account's Workers scripts, Containers/image
+registry, Durable Objects, Turnstile widgets, and zone DNS/setup/Worker routes.
+Check current token scopes and paid-plan eligibility in the dashboard.
 
-| Variable | Value |
-|---|---|
-| `HOST` | `0.0.0.0` (set in `render.yaml`) |
-| `DATA_DIR` | `/data` |
-| `DATABASE_URL` | the Supabase pooler URL |
-| `ADMIN_USERNAME` | `admin` |
-| `ADMIN_PASSWORD` | 8+ chars; otherwise a generated one is logged on boot |
-| `CUSTOMER_SESSION_SECRET` | optional; derived from `BETTER_AUTH_SECRET` |
-| `PUBLIC_BASE_URL` | `https://mamyatelie.com` (used in reset links) |
-| `CORS_ORIGINS` | `https://mamyatelie.com,https://www.mamyatelie.com` |
+## Provision and launch
 
-A service with no `DATABASE_URL` and no disk keeps its JSON stores on the
-container filesystem — on the free plan that state is lost on redeploy.
+From the project root:
 
-## 3. Storefront (Vercel)
-
-1. Import the repository; set **Root Directory** to `web`.
-2. Framework preset: Next.js. Build: `npm run build`.
-3. Environment variable: `BACKEND_URL=https://<service>.onrender.com`.
-4. Deploy, then point `mamyatelie.com` and `www` at Vercel.
-
-`next.config.ts` rewrites `/api/:path*` to `BACKEND_URL`, so the browser only
-ever talks to the Vercel origin. After the first deploy, add the Vercel host to
-`CORS_ORIGINS` if you ever call the API directly.
-
-**Build-time caveat:** Next freezes `rewrites()` into the build output, so
-`BACKEND_URL` must be set when the build runs. On Vercel it already is (project
-environment variables are present during the build). Locally, `npm run start`
-uses whatever `BACKEND_URL` was set for the last `npm run build`; `npm run dev`
-reads it at runtime, which is why the quick start uses dev.
-
-## Optional rails
-
-Each is independent and safe to leave unset:
-
-- Pix → `docs/asaas.md`
-- Email → `docs/mail.md`
-- Captcha → `docs/turnstile.md`
-- Social login → `docs/oauth.md`
-- Postgres → `docs/supabase.md` (above)
-
-## Smoke checks after a deploy
-
-```bash
-curl https://<service>.onrender.com/api/health
-curl https://<service>.onrender.com/api/config
-
-python scripts/smoke.py --base https://<service>.onrender.com \
-  --admin-password '<the admin password>'
+```powershell
+npm ci
+python -m pip install -r requirements.txt
+npm run setup:services
+npm run deploy:check
+python scripts/verify.py
+cd web
+npm ci
+npm run build
+cd ..
+npm run deploy
 ```
 
-`/api/health` reports which rails are live:
+`setup:services` reuses the Resend domain, adds/reuses the Cloudflare zone,
+installs sending DNS without replacing conflicting records, requests Resend
+verification, and creates/reuses a managed Turnstile widget for apex and www.
+Keys are saved only to `.env.local`. Existing receiving mail is preserved.
 
-```json
-{"ok": true, "storage": "postgres", "payment": "asaas",
- "mail": "resend", "captcha": "turnstile"}
+Delegate the domain to the nameservers printed by setup. If unregistered,
+purchase it through the registrar first; setup does not buy domains. Re-run
+checks after propagation and Resend reports `verified`.
+
+Deploy refuses incomplete prerequisites, checks Supabase access, applies the
+security migration, and uploads secrets with the Worker version. The ignored
+temporary secret file is removed in a finally block. Account-management tokens
+never enter the app. Wrangler installs both custom domains and TLS. Production
+health is checked after deployment; submission alone is not a healthy site.
+
+## Validate
+
+```powershell
+npm run typecheck
+node node_modules/wrangler/bin/wrangler.js deploy --dry-run --containers-rollout none --no-autoconfig
 ```
 
-Then in the storefront: add to cart, checkout, confirm the Pix page opens, log
-in to `/admin`, mark an order paid, and (with Turnstile configured) confirm the
-widget appears on `/criar-conta`.
+This dry run checks Worker packaging only. Docker build and deployed runtime
+must also succeed. First container provisioning can take several minutes.
+Expect `/api/health` to report `ok: true`, `storage: postgres`, `mail: resend`,
+`captcha: turnstile`. Verify www redirects and catalog, signup/login, password
+reset, contact and checkout with real Turnstile. Never run the local smoke
+script against production customer data; use temporary stores and console mail.
 
-## Triage
+Real payments require Asaas production credentials and its webhook at
+`/api/webhooks/asaas`. Without those, payments stay visibly in demonstration
+mode. Social login remains optional. Replace seed prices/photos and review
+store policies before accepting orders.
 
-| Symptom | Cause |
-|---|---|
-| Render: "connection refused" forever | `HOST` not `0.0.0.0` |
-| `/api/health` 500 | `DATABASE_URL` wrong; check the log for psycopg |
-| Social buttons missing | provider credentials absent; check `/api/betterauth/providers` |
-| `captcha_required` on signup | Turnstile secret set but the site key is wrong/missing |
-| Payments labelled "demonstração" | `ASAAS_API_KEY` not set |
-| Reset links point at localhost | `PUBLIC_BASE_URL` not set |
-| Orders disappear after a redeploy | free plan, no `DATABASE_URL`, no disk |
+## Agent setup
+
+The official setup prompt was fetched. Skills were installed locally because
+global configuration is outside the writable sandbox. The optional cf CLI was
+not installed; this project uses Wrangler. The Codex executable was unavailable,
+so MCP OAuth could not be completed. A restart is needed to load the MCP config.
+
+Sources: [agent setup](https://developers.cloudflare.com/agent-setup/prompt.md),
+[Containers](https://developers.cloudflare.com/containers/get-started/),
+[Wrangler](https://developers.cloudflare.com/workers/wrangler/configuration/).
+
+## Remote builds
+
+A local Docker engine can be replaced by Cloudflare Workers Builds connected
+to this repository. Set the production deploy command to `npx wrangler deploy`;
+Cloudflare can build the Dockerfile in its build environment. Configure runtime
+secrets and apply the Supabase migration before enabling the production build.
+The local `npm run deploy` prerequisite check intentionally expects local Docker.
+See [Cloudflare remote container builds](https://developers.cloudflare.com/containers/guides/deploy/).
+
+## Provisioning update
+
+On 2026-10-21 the browser connected successfully. Created dedicated Supabase
+project `mamyat` (`oiplbtukraykycifwccn`) in S?o Paulo, disabled public Data API,
+enabled automatic RLS, applied the initial migration and seeded the 12 products.
+The real production App can connect to Postgres; RLS is confirmed enabled.
+Created a managed Turnstile widget for apex/www. Credentials are saved only in
+ignored `.env.supabase` and `.env.turnstile`.
+
+Cloudflare account is on Free. Containers needs $5/month plus usage. Domain
+registration is available for $10.46, renewing at $10.46/year. Owner approval
+for costs and GitLab login/repository authorization remain pending. No shop
+has been deployed. The legacy GitLab PAT returned 401 and should not be reused.

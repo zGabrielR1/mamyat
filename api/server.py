@@ -212,7 +212,8 @@ class Handler(BaseHTTPRequestHandler):
 
         # health / config -------------------------------------------------
         if method == "GET" and path == "/api/health":
-            return self._json(200, app.health())
+            health = app.health()
+            return self._json(200 if health["ok"] else 503, health)
         if method == "GET" and path == "/api/config":
             return self._json(200, app.public_config())
 

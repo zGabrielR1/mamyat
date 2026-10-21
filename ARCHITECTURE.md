@@ -1,22 +1,22 @@
 # Architecture
 
-One shop, three deployables:
+Cloudflare is the production host (decision 0009). One Worker routes `/api/*`
+to port 8080 and other requests to Next standalone on port 3000 in a single
+Cloudflare Container. Better Auth listens internally on port 3100. Both the
+apex and `www` are Worker custom domains; `www` redirects to the canonical apex.
 
 ```
-browser ──► Vercel (Next.js storefront)
-               │  /api/:path*  rewrite (BACKEND_URL)
-               ▼
-          Render container ─────────────────────────────┐
-            python3 -m api.server  (public :$PORT)      │
-              │  /api/betterauth/* loopback proxy      │
-              ▼                                         │
-            node auth-server/server.mjs (:3100)         │
-              │  signed bridge POST                     │
-              └──────────────────────────────────────►  │
-                                                       ▼
-                                              Supabase Postgres
-                                              (or JSON files)
+browser -> Cloudflare Worker -> Cloudflare Container
+                                | Next standalone :3000
+                                | Python API :8080 -> Supabase Postgres
+                                | Better Auth :3100 (internal)
 ```
+
+The container disk is disposable. Collections and customer session registrations
+live in Supabase. Session signing comes from a stable Worker secret, and
+production startup refuses incomplete service configuration. The supervisor
+terminates the other children if any process exits, so the container restarts
+as one unit. Local development keeps the existing three-process runner.
 
 ## Backend layout
 
@@ -36,9 +36,9 @@ browser ──► Vercel (Next.js storefront)
 
 ## Request lifecycle
 
-1. Vercel rewrites `/api/*` to `BACKEND_URL` (Render, or `127.0.0.1:8080`
-   locally). Every browser call is same-origin, so no CORS preflight is needed
-   in production.
+1. The Cloudflare Worker routes `/api/*` directly to Python. Next rewrites
+   those paths to `BACKEND_URL` only when accessed directly or locally. Browser
+   calls remain same-origin. The Worker replaces forwarded client IP headers.
 2. `Handler._dispatch` parses the path, routes `/api/*` to `_api`, everything
    else to static files (empty `WEB_DIR` on Render).
 3. Auth is header-based: `X-Customer-Token` (or `Bearer ms1.…`) and
@@ -110,7 +110,8 @@ a row lock, so a read-modify-write is atomic across instances. See
 [decisions/0007-jsonb-collections.md](decisions/0007-jsonb-collections.md).
 
 Collections: `products`, `orders`, `customers`, `admins`, `admin_sessions`,
-`password_resets`, `oauth_links`, `settings`, `reservations`, `contacts`.
+`password_resets`, `oauth_links`, `settings`, `reservations`, `contacts`,
+`customer_sessions`.
 
 ## Optional rails (all fail safe)
 

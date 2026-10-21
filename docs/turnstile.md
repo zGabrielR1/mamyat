@@ -6,7 +6,7 @@ login, password-reset request, contact and checkout. The widget is rendered by
 
 ## Configure
 
-`.env.turnstile` (local) or Render environment (hosted):
+`.env.turnstile` (local) or Cloudflare Worker secrets (hosted):
 
 ```
 TURNSTILE_SECRET_KEY=0x…
@@ -55,3 +55,7 @@ publishes (`1x00000000000000000000AA` for the site key,
 | Widget does not appear | site key missing, or `/api/config` has `enabled: false` |
 | `captcha_failed` with a valid widget | hostname not in `TURNSTILE_HOSTNAMES` |
 | All doors reject | secret set without a site key |
+
+Production refuses missing service configuration; the unconfigured fallback
+applies only to local development. `npm run setup:services` provisions these
+services from gitignored `.env.local` and Cloudflare account credentials.

@@ -29,6 +29,7 @@ from .asaas import AsaasError, resolve_payments, resolve_webhook
 from .catalog import (ALLOWED_CATEGORIES, Catalog, CatalogError,
                       clean_categories)
 from .db import make_store
+from .configuration import validate_production
 from .money import MoneyError, brl, brl_with_symbol, to_cents
 from .orders import OrderError, Orders, STATUSES, STATUS_LABELS
 from .sessions import SessionRegistry, resolve_customer_sessions
@@ -45,12 +46,12 @@ DEFAULT_SETTINGS = {
     "whatsapp": "+55 47 99666-9607",
     "instagram": "@atelieda_mamy",
     "cnpj": "40.239.348/0001-50",
-    "city": "São Paulo · SP",
+    "city": "Concórdia · SC",
     "shipping_flat_minor": 1800,
     "free_shipping_minor": 25000,
     "pickup_enabled": True,
     "delivery_days": "3 a 7 dias úteis",
-    "pickup_address": "Retirada combinada com o ateliê, São Paulo/SP",
+    "pickup_address": "Retirada combinada com o ateliê, Concórdia/SC",
     "categories": list(ALLOWED_CATEGORIES),
     "coupons": {
         "BEMVINDA10": {"type": "percent", "value": 10, "active": True,
@@ -61,6 +62,14 @@ DEFAULT_SETTINGS = {
 }
 
 ALLOWED_SETTING_KEYS = frozenset(DEFAULT_SETTINGS)
+# Values shipped before the atelier location was confirmed. Existing stores
+# that still carry them are moved to the Concórdia defaults on boot; anything
+# the owner typed by hand is left alone.
+LEGACY_SETTINGS = {
+    "city": {"São Paulo · SP"},
+    "pickup_address": {"Retirada combinada com o ateliê, São Paulo/SP",
+                       "Retirada combinada em São Paulo"},
+}
 SOCIAL_ACTIONS = {"signup", "login", "checkout", "contact", "reset"}
 
 
@@ -101,7 +110,7 @@ class AppConfig:
         if env is None:
             merged: dict[str, str] = {}
             for name in (".env", ".env.local", ".env.resend", ".env.turnstile",
-                         ".env.asaas", ".env.betterauth"):
+                         ".env.asaas", ".env.betterauth", ".env.supabase", ".env.cloudflare"):
                 merged.update(load_env(os.path.join(base_dir, name)))
             merged.update(os.environ)
             env = merged
@@ -122,6 +131,7 @@ class App:
                  clock=None) -> None:
         self.config = config or AppConfig.from_environment()
         self.env = dict(self.config.env)
+        validate_production(self.env)
         self.clock = clock or time.time
         os.makedirs(self.config.data_dir, exist_ok=True)
         database_url = str(self.env.get("DATABASE_URL") or "").strip()
@@ -147,7 +157,8 @@ class App:
             min_length=8, require_digit=True, require_letter=True,
             max_length=128))
         sessions = resolve_customer_sessions(self.env, self.config.data_dir)
-        self.registry = SessionRegistry(data("customer_sessions.json"))
+        self.registry = SessionRegistry(data("customer_sessions.json"),
+                                        store=store("customer_sessions", {}) if database_url else None)
         admin_username = self.env.get("ADMIN_USERNAME") or "admin"
         admin_password = str(self.env.get("ADMIN_PASSWORD") or "")
         generated = not (len(admin_password) >= 8)
@@ -203,6 +214,10 @@ class App:
         for key, value in DEFAULT_SETTINGS.items():
             if key not in current:
                 current[key] = value
+                changed = True
+        for key, old_values in LEGACY_SETTINGS.items():
+            if current.get(key) in old_values:
+                current[key] = DEFAULT_SETTINGS[key]
                 changed = True
         if changed:
             self.settings_store.write(current)
@@ -407,8 +422,9 @@ class App:
         }
 
     def health(self) -> dict:
+        database_ok = self.products_store.ping() if self.storage == "postgres" else True
         return {
-            "ok": True,
+            "ok": database_ok,
             "service": "mamyat",
             "version": __version__,
             "time": now_iso(),

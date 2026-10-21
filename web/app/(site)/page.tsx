@@ -2,15 +2,18 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { ArrowRight, HeartHandshake, PackageCheck, Scissors, Sparkles } from "lucide-react"
+import { ArrowRight, HeartHandshake, MapPin, PackageCheck, Scissors, Sparkles } from "lucide-react"
 
 import { api } from "@/lib/api"
 import type { Category, Product } from "@/lib/types"
 import { ProductCard } from "@/components/product-card"
+import { WhatsAppIcon } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useConfig } from "@/components/providers"
-import { brl } from "@/lib/utils"
+import { brl, formatWhatsapp, whatsappHref } from "@/lib/utils"
+
+const WHATSAPP_MESSAGE = "Olá! Vim pelo site do Mamy Ateliê e gostaria de encomendar uma peça."
 
 const VALUES = [
   {
@@ -55,8 +58,9 @@ export default function HomePage() {
     <div className="paper-texture">
       <section className="container-page grid items-center gap-12 py-14 md:grid-cols-[1.05fr_1fr] md:py-20">
         <div className="max-w-xl">
-          <p className="text-[0.7rem] uppercase tracking-[0.3em] text-muted-foreground">
-            Ateliê de crochê e bordado
+          <p className="flex items-center gap-1.5 text-[0.7rem] uppercase tracking-[0.3em] text-muted-foreground">
+            <MapPin className="size-3.5" aria-hidden />
+            Ateliê de crochê e bordado · {config.store.city}
           </p>
           <h1 className="mt-5 text-balance font-serif text-5xl leading-[1.04] tracking-tight md:text-6xl">
             Feito à mão, feito para durar.
@@ -228,9 +232,36 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex flex-col gap-3 md:items-end">
-              <Button asChild size="lg" variant="secondary" className="w-full md:w-auto">
+              {config.store.whatsapp ? (
+                <Button asChild size="lg" variant="secondary" className="w-full md:w-auto">
+                  <a
+                    href={whatsappHref(config.store.whatsapp, WHATSAPP_MESSAGE)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <WhatsAppIcon className="size-4" />
+                    Chamar no WhatsApp
+                  </a>
+                </Button>
+              ) : null}
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="w-full border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground dark:bg-transparent dark:hover:bg-primary-foreground/10 md:w-auto"
+              >
                 <Link href="/encomendas">Começar uma encomenda</Link>
               </Button>
+              {config.store.whatsapp ? (
+                <a
+                  href={whatsappHref(config.store.whatsapp, WHATSAPP_MESSAGE)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-center text-xs text-primary-foreground/60 hover:underline md:text-right"
+                >
+                  {formatWhatsapp(config.store.whatsapp)} · resposta em até 2 dias úteis
+                </a>
+              ) : null}
               <a
                 href={`mailto:${config.store.email}`}
                 className="text-center text-xs text-primary-foreground/60 hover:underline md:text-right"

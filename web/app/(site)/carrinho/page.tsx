@@ -201,7 +201,7 @@ export default function CartPage() {
               <span>{method === "pickup" ? "Retirada" : quote?.shipping_minor === 0 ? "Grátis" : brl(quote?.shipping_minor ?? config.shipping.flat_minor)}</span>
             </div>
             {quote?.discount_minor ? (
-              <div className="flex justify-between text-emerald-700">
+              <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
                 <span>Cupom {quote.coupon}</span>
                 <span>− {brl(quote.discount_minor)}</span>
               </div>

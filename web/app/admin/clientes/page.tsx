@@ -395,10 +395,10 @@ function NewCustomerDialog({
 
         {temporary ? (
           <div className="space-y-4">
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
               <p className="font-medium">Senha temporária</p>
               <div className="mt-2 flex items-center gap-2">
-                <code className="flex-1 rounded bg-white/70 px-2 py-1.5 font-mono text-sm">
+                <code className="flex-1 rounded bg-muted px-2 py-1.5 font-mono text-sm">
                   {temporary}
                 </code>
                 <Button

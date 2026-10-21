@@ -33,3 +33,8 @@ web/.vercel/
 .DS_Store
 Thumbs.db
 *.swp
+.wrangler/
+.dev.vars*
+.npm-cache/
+.agents/
+.playwright-mcp/

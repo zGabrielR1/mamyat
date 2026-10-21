@@ -6,8 +6,11 @@ __pycache__/
 **/__pycache__/
 *.pyc
 
-# the frontend is built and deployed by Vercel, not copied into this image
-web/
+# Cloudflare builds the frontend from source; exclude only local outputs
+web/node_modules/
+web/.next/
+web/out/
+web/.env*
 
 # dependencies are installed inside their own stage from the lockfiles
 **/node_modules/
@@ -21,3 +24,8 @@ data/runtime/
 
 docs/
 decisions/
+.agents/
+.codex/
+.wrangler/
+.npm-cache/
+.playwright-mcp/

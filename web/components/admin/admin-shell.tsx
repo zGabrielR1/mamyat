@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Toaster } from "@/components/ui/sonner"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
 const NAV = [
@@ -57,7 +58,10 @@ function LoginCard() {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-secondary/40 px-4 py-12">
-      <div className="w-full max-w-sm rounded-2xl border bg-card p-7 shadow-sm">
+      <div className="relative w-full max-w-sm rounded-2xl border bg-card p-7 shadow-sm">
+        <div className="absolute right-2 top-2">
+          <ThemeToggle />
+        </div>
         <div className="flex items-center gap-2">
           <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Store className="size-4" />
@@ -175,6 +179,10 @@ function AdminShell({ children }: { children: React.ReactNode }) {
               )
             })}
           </nav>
+          <div className="flex items-center justify-between gap-2 border-t px-4 py-2 lg:px-5">
+            <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Tema</span>
+            <ThemeToggle />
+          </div>
           <div className="hidden px-5 py-4 text-xs text-muted-foreground lg:block">
             <p>Conectada como</p>
             <p className="mt-0.5 font-medium text-foreground">@{admin.username}</p>
@@ -184,7 +192,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
           {mustChange ? (
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
               <p>
                 Você está usando a senha inicial do painel. Troque agora para proteger a loja.
               </p>

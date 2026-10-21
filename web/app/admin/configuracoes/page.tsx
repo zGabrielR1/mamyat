@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Loader2, Plus, Save, Trash2 } from "lucide-react"
+import { Loader2, MessageCircle, Plus, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { api } from "@/lib/api"
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatWhatsapp, whatsappHref } from "@/lib/utils"
 
 type CouponRow = {
   code: string
@@ -219,6 +220,17 @@ export default function AdminSettingsPage() {
             <div>
               <Label htmlFor="whatsapp">WhatsApp (com DDD)</Label>
               <Input id="whatsapp" value={form.whatsapp} onChange={(event) => set("whatsapp", event.target.value)} placeholder="11999999999" />
+              {form.whatsapp ? (
+                <a
+                  href={whatsappHref(form.whatsapp, "Olá! Vim pelo site do Mamy Ateliê e gostaria de falar com o ateliê.")}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  <MessageCircle className="size-3.5" />
+                  Abrir conversa com {formatWhatsapp(form.whatsapp)}
+                </a>
+              ) : null}
             </div>
             <div>
               <Label htmlFor="instagram">Instagram</Label>

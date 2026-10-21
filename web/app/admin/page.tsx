@@ -119,7 +119,7 @@ export default function AdminDashboardPage() {
           <section className="rounded-xl border bg-card">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-serif text-xl">Estoque baixo</h2>
-              <AlertTriangle className="size-4 text-amber-600" />
+              <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="divide-y">
               {data.low_stock.length === 0 ? (

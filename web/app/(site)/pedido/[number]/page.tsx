@@ -322,7 +322,7 @@ function OrderView() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{brl(order.subtotal_minor)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Frete</span><span>{order.shipping_method === "pickup" ? "Retirada" : brl(order.shipping_minor)}</span></div>
-              {order.discount_minor ? <div className="flex justify-between text-emerald-700"><span>Cupom</span><span>− {brl(order.discount_minor)}</span></div> : null}
+              {order.discount_minor ? <div className="flex justify-between text-emerald-700 dark:text-emerald-400"><span>Cupom</span><span>− {brl(order.discount_minor)}</span></div> : null}
               <div className="flex justify-between pt-2 text-base font-medium"><span>Total</span><span>{order.total}</span></div>
             </div>
           </section>

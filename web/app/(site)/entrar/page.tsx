@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("")
   const [remember, setRemember] = React.useState(true)
   const [captcha, setCaptcha] = React.useState("")
+  const [captchaVersion, setCaptchaVersion] = React.useState(0)
   const [busy, setBusy] = React.useState(false)
   const [providers, setProviders] = React.useState<Provider[]>([])
   const [error, setError] = React.useState("")
@@ -50,6 +51,8 @@ export default function LoginPage() {
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Não foi possível entrar")
     } finally {
+      setCaptcha("")
+      setCaptchaVersion((value) => value + 1)
       setBusy(false)
     }
   }
@@ -117,7 +120,7 @@ export default function LoginPage() {
           Continuar conectada por 30 dias
         </label>
         {config.turnstile.enabled ? (
-          <Turnstile siteKey={config.turnstile.site_key} action="login" onToken={setCaptcha} />
+          <Turnstile resetKey={captchaVersion} siteKey={config.turnstile.site_key} action="login" onToken={setCaptcha} />
         ) : null}
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <Button type="submit" size="lg" className="w-full" disabled={busy}>

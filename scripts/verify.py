@@ -28,12 +28,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
 
 SKIP_DIRS = {"node_modules", "__pycache__", ".next", "out", ".git", ".venv",
-             ".tmp", "data/runtime"}
+             ".tmp", "data/runtime", ".agents", ".codex", ".wrangler"}
 FAIL: list[str] = []
 
 REQUIRED = [
     "README.md", "AGENTS.md", "ARCHITECTURE.md", "PROGRESS.md", "CURRENTTASK",
-    "Makefile", "requirements.txt", "Dockerfile", "render.yaml", ".env.example",
+    "Makefile", "requirements.txt", "Dockerfile.cloudflare", "wrangler.jsonc", ".env.example",
     ".gitignore", ".dockerignore",
     "docs/deploy.md", "docs/oauth.md", "docs/mail.md", "docs/turnstile.md",
     "docs/asaas.md", "docs/supabase.md", "docs/needed-from-owner.md",
@@ -55,7 +55,7 @@ REQUIRED = [
     "auth-server/package.json", "auth-server/package-lock.json",
     "supabase/migrations/20261020000000_mamyat.sql",
     "data/seed/products.json",
-    "scripts/verify.py", "scripts/smoke.py", "scripts/render_deploy.py",
+    "scripts/verify.py", "scripts/smoke.py", "scripts/cloudflare.mjs",
     "scripts/dev.py",
     "web/package.json", "web/next.config.ts", "web/components.json",
     "web/lib/api.ts", "web/lib/types.ts", "web/lib/utils.ts",
@@ -153,7 +153,7 @@ def check_links() -> None:
 
 def check_contract() -> None:
     """A few invariants the deploy depends on, asserted rather than assumed."""
-    dockerfile = open("Dockerfile", encoding="utf-8").read()
+    dockerfile = open("Dockerfile.cloudflare", encoding="utf-8").read()
     if "api.server" not in dockerfile:
         FAIL.append("Dockerfile does not start api.server")
     if "auth-server/server.mjs" not in dockerfile:
@@ -161,11 +161,11 @@ def check_contract() -> None:
     if "python3 -m api.server" not in dockerfile:
         FAIL.append("Dockerfile must run the backend as a module")
 
-    render = open("render.yaml", encoding="utf-8").read()
-    for token in ("healthCheckPath: /api/health", "runtime: docker",
-                  "dockerfilePath: ./Dockerfile", "HOST"):
-        if token not in render:
-            FAIL.append(f"render.yaml is missing {token!r}")
+    worker = json.load(open("wrangler.jsonc", encoding="utf-8"))
+    if worker.get("containers", [{}])[0].get("image") != "./Dockerfile.cloudflare":
+        FAIL.append("Cloudflare must build Dockerfile.cloudflare")
+    if worker.get("vars", {}).get("APP_ENV") != "production":
+        FAIL.append("Cloudflare must enable production validation")
 
     example = open(".env.example", encoding="utf-8").read()
     for key in ("ASAAS_API_KEY", "TURNSTILE_SECRET_KEY", "RESEND_API_KEY",
