@@ -1,7 +1,16 @@
 # Admin panel
 
-`/admin` is the shop's back office. It talks to the same public API as the
-storefront, with `X-Admin-Token` instead of a customer session.
+The back office runs on its own origin instead of the shop's public address.
+The free deployment publishes a second Worker, `mamyat-admin`, at
+`https://mamyat-admin.<account>.workers.dev`; the storefront's `/admin` routes
+308-redirect there. The admin Worker serves only `/admin/*`, the shared Next
+assets and `/api/admin/*` plus `/api/health`, and sends
+`X-Robots-Tag: noindex`, `X-Frame-Options: DENY` and
+`Content-Security-Policy: frame-ancestors 'none'`.
+
+Every action calls the same API through `/api/admin/*` on the admin origin with
+`X-Admin-Token` instead of a customer session; the storefront origin returns
+404 for those routes. Set `ADMIN_BASE_URL` to override the derived address.
 
 ## Signing in
 
@@ -13,17 +22,20 @@ fingerprints in `admin_sessions`; logging out revokes the token.
 
 Local: `python scripts/dev.py`, then http://localhost:3000/admin.
 
+Deployed: https://mamyat-admin.henriquealveslohrayne.workers.dev/admin/
+(the storefront's `/admin` redirects there).
+
 ## Sections
 
 | Section | What it does |
 |---|---|
-| Visão geral | Revenue, orders, ticket, customers, low stock, best sellers, recent orders |
-| Pedidos | Filter by status/text, open an order, mark paid (demo), advance status, tracking code |
-| Produtos | Create, edit, archive/reactivate; variants and stock; images and details |
+| Visão geral | Revenue, order pipeline, alerts, low stock, best sellers, recent orders, quick actions |
+| Pedidos | Search/status/date filters, open an order, mark paid (demo), advance status, tracking, CSV export |
+| Produtos | Create, edit, duplicate, archive/reactivate; quick stock replenishment; CSV export |
 | Categorias | Create, rename (moves the products), delete when unused |
-| Clientes | Search/filter, open a customer, edit data, block/unblock, send reset, anonymize, create |
-| Contatos | Messages sent from the storefront contact form |
-| Configurações | Store identity, shipping, coupons, admin password |
+| Clientes | Search/filter, open a customer, edit data, WhatsApp shortcut, block/unblock, send reset, anonymize, create, CSV export |
+| Contatos | Messages sent from the storefront contact form, reply/copy email |
+| Configurações | Store identity, shipping, coupons, admin password, current storefront/admin addresses |
 
 ## Products
 
@@ -33,16 +45,31 @@ reais with a comma (`189,00`) and stored as integer centavos. Rules enforced by
 
 - name 2–80 chars; description 20–4000; at least one variant;
 - one variant per name, optional unique SKU, stock 0–100 000;
-- images are local paths (`/produtos/…`) or `https://` URLs, at most 6;
+- images are uploaded `/media/…` paths, local paths (`/produtos/…`) or
+  `https://` URLs, at most 6;
 - category must be one of the configured categories;
 - `slug` is generated from the name and must be unique;
 - `compare_at` only shows when it is above the price;
 - `made_to_order` ignores stock and uses `production_days`;
 - archiving sets `active = false`; the row is kept so old orders still resolve.
 
-Creating a product does not upload files. Put an image in
-`web/public/produtos/` and reference it as `/produtos/arquivo.svg`, or paste an
-`https://` URL.
+### Photos
+
+The editor accepts uploads directly. Drag files onto the drop zone or choose
+them; the browser resizes the longest side to 1600 px, encodes WebP and posts
+the bytes to `POST /api/admin/media`. Uploaded photos are served from
+`/media/<key>` and stored in the free `product-media` Supabase bucket. Up to six
+per product; the first is the cover. Use the arrow buttons to reorder and the
+trash button to detach.
+
+The URL field remains for external `https://` images and local paths such as
+`/produtos/arquivo.svg`. If the deployment has no Storage configuration, the
+upload control disappears and only that field is shown.
+
+Removing a photo from a product does not delete the stored object: historical
+orders snapshot the image URL and must keep rendering. Objects are append-only
+(decision 0012). Accepted uploads are JPEG, PNG or WebP up to 5 MiB; the server
+checks the magic bytes even though the browser already compressed the file.
 
 ## Categories
 
@@ -86,10 +113,20 @@ session epoch, marketing flag, provider and `active`.
 Endpoints: `GET/POST /api/admin/customers`, `GET/PATCH/DELETE
 /api/admin/customers/{id}`, `POST /api/admin/customers/{id}/reset`.
 
+## Session safety
+
+- The panel signs out after 30 minutes without activity, warning at 25.
+- A 401 from any admin request clears the stored token and returns to the login
+  screen immediately.
+- The token lives in `sessionStorage`, scoped to the admin origin; closing the
+  tab ends the browser session.
+
 ## Roles
 
-Both `admin` and `viewer` currently reach every endpoint; the field exists for a
-future read-only role. Do not hand out accounts until that split is enforced.
+`admin` can read and write. `viewer` is enforced read-only by both the Python
+and Edge APIs: mutations return `403 forbidden`, while viewing and changing the
+viewer's own password remain allowed. The panel hides write controls and shows
+a read-only banner for these accounts.
 
 ## API map (admin)
 
@@ -117,4 +154,33 @@ POST   /api/admin/customers/{id}/reset
 
 GET    /api/admin/contacts
 GET    /api/admin/settings       PATCH  /api/admin/settings
+
+POST   /api/admin/media          (raw image body; returns /media/<key>)
+GET    /media/<key>              (public photo, cached immutable)
 ```
+
+## Operations workspace (2026-10-23)
+
+Open **Operação do ateliê** for the oldest-first paid/production/delivery queue.
+Search by customer, number or piece; filter by shipment or pickup. Start production,
+record dispatch/tracking and confirm receipt through the confirmation dialog.
+Delivery dispatch requires a tracking code in this workflow. For local pickup,
+use the dispatch step when the piece is ready and confirm receipt after pickup.
+
+Select paid or packing orders and choose **Imprimir separação** to print current
+item snapshots with variant, SKU and quantity. If a selected order changed stage,
+refresh the queue and review the selection. Viewers can inspect/print but cannot
+advance orders.
+
+**Estoque e reposição** distinguishes physical stock from availability after
+reservations; made-to-order and inactive products do not appear in low-stock
+priorities. Export the list or use Revisar to find the product in the catalog.
+
+**Vendas e receita** totals current confirmed order values by creation date.
+These are gross order values including freight/discounts, not provider payouts
+or profit. Awaiting, cancelled and refunded orders are excluded from confirmed
+value. The seven-day chart is explicitly independent of the chosen summary range.
+CSV exports contain customer/order information and should be handled privately.
+
+Cancelling or recording a refund now asks for confirmation. Recording a refunded
+status does not issue a provider refund; confirm that separately before recording.

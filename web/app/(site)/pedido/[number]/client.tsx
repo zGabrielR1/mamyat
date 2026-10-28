@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { MercadoPagoPayment } from "@/components/mercadopago-payment"
 import { brl, orderStatusTone } from "@/lib/utils"
 
 const FLOW = [
@@ -96,7 +97,7 @@ function OrderView() {
         body: { email },
       })
       setOrder(updated)
-      toast.success("Novo Pix gerado")
+      toast.success("Pagamento atualizado")
     } catch (failure) {
       toast.error(failure instanceof Error ? failure.message : "Tente novamente")
     } finally {
@@ -186,7 +187,11 @@ function OrderView() {
             Pedido {order.number}
           </p>
           <h1 className="mt-2 font-serif text-4xl">
-            {order.status === "awaiting_payment" ? "Falta só o Pix" :
+            {order.status === "awaiting_payment" ? (
+                order.payment.review_required ? "Pagamento em conferência" :
+                ["pending", "in_process", "authorized", "in_mediation"].includes(order.payment.provider_status || "") ? "Aguardando confirmação" :
+                order.payment.expired ? "Reserva expirada" : "Falta só o pagamento"
+              ) :
               order.status === "paid" ? "Pagamento confirmado" :
               order.status === "packing" ? "Em produção no ateliê" :
               order.status === "shipped" ? "A caminho de você" :
@@ -227,6 +232,11 @@ function OrderView() {
         <div className="space-y-6">
           {order.status === "awaiting_payment" ? (
             <section className="rounded-xl border border-primary/30 bg-card p-5">
+              {order.payment?.provider === "mercadopago" ? (
+                <MercadoPagoPayment order={order} email={email}
+                  returnedPaymentId={search.get("payment_id") || search.get("collection_id") || ""}
+                  onUpdate={setOrder} onRetry={retry} retrying={busy} />
+              ) : <>
               <h2 className="font-serif text-xl">Pague com Pix</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 O pedido confirma sozinho assim que o pagamento cai. A reserva dura 30 minutos.
@@ -280,6 +290,7 @@ function OrderView() {
                   </p>
                 </div>
               </div>
+              </>}
               {order.payment?.error ? (
                 <p className="mt-4 rounded-lg bg-destructive/5 p-3 text-xs text-destructive">
                   {order.payment.error}

@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
     if (freeBuild) return [];
     return [
       { source: "/api/:path*", destination: `${backend}/api/:path*` },
+      { source: "/media/:path*", destination: `${backend}/media/:path*` },
     ];
   },
   async headers() {

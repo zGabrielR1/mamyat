@@ -1,6 +1,161 @@
+# Current: remaining-issue review (2026-10-28)
+
+Continued with issue review after the owner authorized follow-up work. Found
+that Edge product detail omitted Python's `review_stats` response. Added the
+same count, one-decimal average and five-star distribution, scoped to approved
+reviews for the requested product. No storefront design change.
+
+Validation: network-free Edge review checks cover empty results, product scope,
+rounding, pending/rejected exclusion and approve/reject/delete transitions.
+Payment checks, verify.py (47 backend tests) and 29 isolated local HTTP smoke
+checks passed. Frontend typecheck skipped because cleanup removed node_modules;
+no frontend source changed in this follow-up.
+
+Published 2026-10-28: owner ran deploy:edge successfully for shop-api on project
+oiplbtukraykycifwccn from the authenticated owner terminal. Live health/catalog
+and rating statistics/privacy checks passed for all 12 products. No production
+commerce data changed. Earlier sandbox publish attempts failed because its
+Windows account could not access the owner's Supabase CLI login.
+
+# Current: finish product reviews (2026-10-26)
+
+Resumed the unfinished reviews feature present in the working tree. Customer
+submissions now select an actual paid order and both Python and Edge verify
+ownership, product membership and paid status. Pending/rejected reviews remain
+private; public responses omit order references. Duplicate reviews are refused.
+Admin moderation lives at /admin/avaliacoes with viewer guards and confirmed
+deletion. Existing composition, palette and typography are preserved.
+
+Published on 2026-10-26: Supabase shop-api and both Cloudflare Workers.
+Storefront version: 1c7c7621-ebb7-4017-9f42-15fc1313d856.
+Admin version: 62b9bf22-3cb6-42f6-b1a3-b107a865c38e.
+All 21 live HTTP checks passed, including real admin login/review queue/logout,
+public reviews, unauthenticated submission rejection, origin guards and Mercado
+Pago health. No production commerce records were created or changed.
+Evidence: .tmp/reviews-live-checks.json. See decision 0017 for behavior and tests.
+
+Owner requested Cleanscript across the whole ppp tree and a ZIP afterward.
+Generated dependencies/builds will be removed; reinstall before local development.
+
+Validation: 47 backend tests passed; the four review tests additionally cover
+live local HTTP routes and viewer guards. Network-free Edge review and payment
+checks passed, as did 29 isolated HTTP smoke checks and the Next production
+static export (28 generated pages, including /admin/avaliacoes). The initial
+duplicate-type failure was corrected and the export's TypeScript phase passed.
+
+# Previous: preserve previous design and retain new functions (2026-10-23)
+
+Owner clarified: roll back design only, keep new functionality. The working
+source now restores the original homepage/header/footer/fonts/colors/radii and
+product-card layout. Functional controls and the new operations workspace use
+scoped styles and the original brand tokens. Existing admin screens retain the
+earlier appearance. No split-stage/rose/mulberry global styling remains.
+
+Keep: featured-item switching inside the existing hero image, browser saves,
+availability/budget/saved filters, product gallery, query/error recovery,
+checkout sizing, admin operations/printing/stock/sales/CSV, role guards, tracking,
+confirmed destructive actions and scoped counts. No API/database change.
+
+Validation passed: 43 backend tests/structure/types, 29 HTTP checks on a fresh
+isolated store, production export, both Worker dry runs, 100 browser checks
+(including palette/headline/composition checks) and 148 comparisons against the
+previous live design. Zero browser page errors at 1440/768/390/320. The original
+header's 320px overflow received a sizing-only fix. Published storefront version
+bacc863c-e39c-4fa6-817b-6dd02840bc87 and admin version
+5c8d67da-e914-41c0-8c0d-56ddf1c73b93. All 47 live checks passed with zero page
+errors: original palette/headline/layout, saved pieces, availability filters,
+real admin login, operations data, stock/sales at four widths and origin guards.
+No production commerce records were created or changed. Evidence:
+.taste-skill/preserved-design/ and .taste-skill/preserved-live/.
+See decision 0016. Do not redeploy the archived rejected visual source in
+.tmp/rejected-visual-source.
+
+# Previous live rollback (2026-10-23)
+
+Historical intermediate state; superseded by the functional restoration above.
+
+Owner explicitly prefers the previous UI. Both Workers were rolled back to
+the exact versions active before the redesign, at 100% traffic:
+- Storefront: 0d7af566-c8d7-44e4-9c3e-3dad4d678b9f.
+- Admin: 886f79dd-1b5d-497e-9ab9-9d0f82ac6c8e.
+
+No commerce data, database, payment rail, or storage was rolled back.
+The local redesign source remains uncommitted and is NOT the deployed UI.
+Do not run deploy on this working tree without first removing the rejected
+visual redesign. Any further UI work must be light, preserve the previous
+composition, palette and typography, and avoid the split-stage direction.
+Do not git-reset the whole repository: it contains earlier uncommitted
+checkout/payment/admin work unrelated to the rejected redesign.
+
+# Superseded atelier redesign (2026-10-23)
+
+Storefront and admin redesign published through the existing free two-Worker
+deploy. No database/API migration or new dependency.
+
+Storefront Worker: 2a8ca1bf-e956-42d0-9c86-dbc69f302afe.
+Admin Worker: 6457d81d-7402-4835-afe4-94b85cc2b9de.
+Wrangler OAuth was renewed with account/user read and Workers/script/route
+publishing scopes. After the first publish stopped for missing auth, the same
+verified export was published with the deploy script's existing Worker flags
+and transient secrets file. The transient file was removed.
+
+Storefront: split-stage catalog showcase, occasion discovery, browser-saved
+pieces, availability/budget/saved filters, functional product-image gallery,
+rose/mulberry light palette and neutral dark surfaces. Checkout now fits 320px.
+
+Admin: /admin/operacao production/dispatch/delivery queue, search/delivery scope,
+confirmed transitions and tracking, selected-order picking printouts, physical
+versus available stock priorities/CSV, gross confirmed sales/CSV and seven-day
+chart. Responsive stock lists and horizontal phone charts. Viewer controls remain
+read-only. Order cancellation/refund confirmation, scoped filter counts and
+dashboard error recovery also improved.
+
+Checks passed: verify.py (43 tests, structure, types), 29 isolated HTTP smoke
+checks, production build, both Worker dry runs, 80 browser workflow checks and
+14 final light/dark layout checks at 1440/768/390/320. No browser page errors.
+The stock taste inspector times out at Page.enable; direct Chrome screenshots
+and functional assertions provide the fallback. Source lint on the new core
+surfaces: zero failures, one date-padding warning. Product SVGs are retained;
+original photography is still the main visual limitation.
+
+See decisions/0015-atelier-discovery-and-operations.md and
+docs/design-review-2026-10-23.md.
+
+LIVE VERIFIED: 35 checks passed with zero browser page errors at
+1440/768/390/320: new storefront content/showcase and availability filters,
+real admin login, authenticated operations data, stock/sales layouts, health,
+admin-origin redirects and unauthorized/cross-origin API rejection. No production
+commerce records were created or changed. Evidence is under ignored
+.taste-skill/live/results.json and its screenshots.
+
+# Current checkout polish (2026-10-22)
+
+Published checkout/payment UX polish to storefront Worker
+0d7af566-c8d7-44e4-9c3e-3dad4d678b9f and the matching admin export.
+The Edge API now supports customer-authorized provider status verification
+on a Mercado Pago return, using the same transition as its webhook.
+Checkout shows server quote prices, loading/retry states, removable coupons
+and inline errors. Orders distinguish processing, declined, expired and
+manual-review payments; expired or unverified returns do not invite re-payment.
+43 Python tests, provider checks, isolated API smoke/concurrency checks,
+production build and Worker dry runs passed. Seven synthetic payment states,
+quote recovery, invalid coupons and stale quote races passed mobile/desktop
+browser checks. Live API remains Mercado Pago production. No purchase made.
+See decisions/0014-payment-return-experience.md and docs/mercadopago.md.
+
+# Current payment task (2026-10-22)
+
+Mercado Pago Checkout Pro is deployed on the free Supabase Edge + Cloudflare
+storefront/admin topology. Production API reports Mercado Pago; hosted
+checkout accepts Pix and cards. No purchase was submitted during validation.
+41 Python tests, payment checks, isolated HTTP smoke checks and production
+build passed. Storefront Worker da0f087e-d19e-4ce9-a19b-3a6c03f81cb5;
+admin Worker 7eace1c0-5a39-44c7-b5bd-e63121485f5c.
+See docs/mercadopago.md. Existing free-hosting constraints remain in force.
+
 # Current task
 
-Deploy the free Cloudflare Workers + Supabase launch. No domain purchase,
+Keep the free Cloudflare Workers + Supabase launch healthy. No domain purchase,
 paid plan, Render, Vercel, or Container deployment is authorized.
 
 Implemented: private free Supabase project/database, 12 seeded products,
@@ -9,7 +164,23 @@ Turnstile Fetch verification, transaction-safe reservations, admin/account API.
 29 isolated HTTP checks and last-unit concurrency checks passed. Static
 production build and free Worker dry-run passed.
 
-Live: https://mamyat.henriquealveslohrayne.workers.dev
+Admin panel now ships on a separate origin (`mamyat-admin`) published by the
+same deploy from the same export. The storefront redirects `/admin` there and
+the admin Worker only exposes admin pages, assets, `/api/admin/*` and
+`/api/health`. Panel improvements: pipeline/alert dashboard, filters and CSV
+exports, quick stock, product duplication, idle sign-out and enforced read-only
+viewers. `npm run deploy:check` dry-runs both Workers.
+
+Product photos are built but the Edge half is not published yet: the
+`product-media` bucket/migration is applied, and `POST /api/admin/media`,
+`/media/<key>` Worker serving and the admin uploader are in the tree. Publish
+the Edge function with `npm run deploy:edge` after `npx supabase login` (the
+project stores no Supabase access token). Until then the product editor hides
+uploads because `/api/admin/products` does not report `media: true`, and the
+URL/local-path fields keep working.
+
+Live storefront: https://mamyat.henriquealveslohrayne.workers.dev
+Live admin: https://mamyat-admin.henriquealveslohrayne.workers.dev/admin/
 Wrangler OAuth completed, assets deployed, Turnstile hostname updated. Public
 health/catalog/product/order-shell/admin routes and real admin login passed.
 Turnstile loader patch deployed; a real automatically issued token passed the

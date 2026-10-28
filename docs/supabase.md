@@ -9,9 +9,12 @@ transaction. See [decisions/0007-jsonb-collections.md](../decisions/0007-jsonb-c
 
 1. Create a Supabase project (a dedicated one, not shared with another app —
    the table is a single shared state surface).
-2. Apply `supabase/migrations/20261020000000_mamyat.sql`:
-   - paste it into the SQL editor, or
-   - `supabase link --project-ref <ref>` then `supabase db push`.
+2. Apply the migrations:
+   - `supabase/migrations/20261020000000_mamyat.sql` (collections), and
+   - `supabase/migrations/20261021000000_product_media.sql` (public
+     `product-media` Storage bucket for product photos).
+   Paste them into the SQL editor, or `supabase link --project-ref <ref>` then
+   `supabase db push`.
 3. Copy the **pooler** connection string from Project Settings → Database.
    Use the IPv4-accessible session pooler on port `5432` for the Cloudflare
    Container. Keep TLS enabled with `sslmode=require`.
@@ -66,7 +69,9 @@ methods, so this is the supported dev path — no Postgres install required.
 
 ## Cutover checklist
 
-- [ ] migration applied; `select * from public.mamyat_health();` works
+- [ ] migrations applied; `select * from public.mamyat_health();` works
+- [ ] `select id, public from storage.buckets where id = 'product-media';`
+      returns the public photo bucket
 - [ ] `DATABASE_URL` set as a Cloudflare Worker secret, `"storage": "postgres"` in `/api/health`
 - [ ] admin login works and a test order survives a redeploy
 - [ ] no anon `select` possible on `mamyat_documents`

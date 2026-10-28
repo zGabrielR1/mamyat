@@ -16,6 +16,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 
 from foundry.auth import PasswordError, PasswordHasher, PasswordPolicy
 from foundry.betterauth import BridgeError, verify_bridge
@@ -30,8 +31,11 @@ from .catalog import (ALLOWED_CATEGORIES, Catalog, CatalogError,
                       clean_categories)
 from .db import make_store
 from .configuration import validate_production
+from .media import MediaError, MediaStore
+from .mercadopago import PaymentMismatch
 from .money import MoneyError, brl, brl_with_symbol, to_cents
 from .orders import OrderError, Orders, STATUSES, STATUS_LABELS
+from .reviews import ReviewError, Reviews
 from .sessions import SessionRegistry, resolve_customer_sessions
 from .store import now_iso
 from .validation import FieldError, clean_text, validate_email, validate_cep
@@ -100,7 +104,7 @@ class AppConfig:
     seed_path: str = field(default_factory=lambda: os.path.join(BASE_DIR, "data", "seed", "products.json"))
     env: dict[str, str] = field(default_factory=dict)
     env_files: tuple[str, ...] = (".env", ".env.local", ".env.resend",
-                                  ".env.turnstile", ".env.asaas", ".env.betterauth")
+                                  ".env.turnstile", ".env.asaas", ".env.mercadopago.prod", ".env.betterauth")
     login_delay: float = 0.12
     gate_signup: bool = True
 
@@ -151,6 +155,9 @@ class App:
         self.settings_store = store("settings", dict(DEFAULT_SETTINGS))
         self.reservations_store = store("reservations", {})
         self.contacts_store = store("contacts", [])
+        self.reviews_store = store("reviews", [])
+        self.media = MediaStore(
+            self.env.get("MEDIA_DIR") or os.path.join(self.config.data_dir, "media"))
         data = lambda name: os.path.join(self.config.data_dir, name)
 
         self.hasher = PasswordHasher(policy=PasswordPolicy(
@@ -189,6 +196,7 @@ class App:
         self.payments = payments
         self.orders = Orders(self.orders_store, self.catalog, self.settings_store,
                              payments=payments, clock=self.clock)
+        self.reviews = Reviews(self.reviews_store)
         self.mailer = mailer if mailer is not None else resolve_mailer(
             env=self.env, env_file=os.path.join(BASE_DIR, ".env.resend"))
         self.verifier = verifier if verifier is not None else resolve_verifier(
@@ -401,11 +409,11 @@ class App:
             },
             "payment": {
                 "mode": "demo" if getattr(self.payments, "name", "") == "demo"
-                        else "asaas",
+                        else getattr(self.payments, "name", "asaas"),
                 "environment": (
                     getattr(getattr(self.payments, "config", None), "env_name",
                             "produção")
-                    if getattr(self.payments, "name", "") == "asaas"
+                    if getattr(self.payments, "name", "") in {"asaas", "mercadopago"}
                     else "demonstração"),
             },
             "turnstile": {
@@ -418,6 +426,7 @@ class App:
                 "coupons": bool(shipping["coupons"]),
                 "guest_checkout": True,
                 "social_login": bool(self.bridge_secret),
+                "media": self.media.available(),
             },
         }
 
@@ -432,6 +441,7 @@ class App:
             "payment": getattr(self.payments, "name", "none"),
             "mail": getattr(self.mailer, "name", "none"),
             "captcha": getattr(self.verifier, "name", "none"),
+            "media": "filesystem" if self.media.available() else "unavailable",
         }
 
     # -- catalog -----------------------------------------------------
@@ -458,7 +468,9 @@ class App:
         related = [row for row in self.catalog.public_all()
                    if row["id"] != product["id"] and
                    row.get("category") == product.get("category")][:4]
-        return {"product": self.catalog.public_row(product), "related": related}
+        review_stats = self.reviews.product_stats(product["id"])
+        return {"product": self.catalog.public_row(product), "related": related,
+                "review_stats": review_stats}
 
     # -- cart / orders ----------------------------------------------
     def quote(self, payload: dict) -> dict:
@@ -500,6 +512,35 @@ class App:
         self._authorize_order(order, customer=customer, email=email)
         return self.order_public(order)
 
+    def check_payment_status(self, number: str, payload: dict, *,
+                             customer: dict | None = None) -> dict:
+        order = self.orders.get(number)
+        if not order:
+            raise ApiError(404, "Pedido não encontrado", "not_found")
+        self._authorize_order(order, customer=customer, email=str(payload.get("email") or ""))
+        if getattr(self.payments, "name", "") != "mercadopago" or order["payment"].get("provider") != "mercadopago":
+            raise ApiError(503, "Pagamento indisponível", "payments_disabled")
+        payment_id = str(payload.get("payment_id") or "")
+        if not re.fullmatch(r"[0-9]{1,30}", payment_id):
+            raise ApiError(400, "Identificador de pagamento inválido", "invalid_payment")
+        previous = order["payment"].get("last_return_check_at")
+        if previous and order["payment"].get("last_return_payment_id") == payment_id:
+            age = datetime.now(timezone.utc) - datetime.fromisoformat(previous.replace("Z", "+00:00"))
+            if age.total_seconds() < 15:
+                return self.order_public(order)
+        try:
+            payment = self.payments.fetch_payment(order, payment_id)
+        except PaymentMismatch as exc:
+            raise ApiError(400, str(exc), "payment_mismatch") from exc
+        except ValueError as exc:
+            raise ApiError(503, str(exc), "provider_unavailable") from exc
+        self._apply_mercadopago_payment(order, payment)
+        order = self.orders.get(number)
+        order["payment"]["last_return_payment_id"] = payment_id
+        order["payment"]["last_return_check_at"] = datetime.now(timezone.utc).isoformat()
+        self.orders._save(order)
+        return self.order_public(order)
+
     def _authorize_order(self, order: dict, *, customer: dict | None,
                          email: str = "") -> None:
         if customer and order.get("customer_id") == customer["id"]:
@@ -526,6 +567,13 @@ class App:
                            for row in self.orders.for_customer(customer["id"])]}
 
     def order_public(self, order: dict, *, compact: bool = False) -> dict:
+        order = {**order, "payment": {**order.get("payment", {})}}
+        if order["payment"].get("provider") == "mercadopago":
+            expires = order["payment"].get("expires_at")
+            expiry = (datetime.fromisoformat(expires.replace("Z", "+00:00")) if expires else
+                      datetime.fromisoformat(order["created_at"].replace("Z", "+00:00")) + timedelta(minutes=30))
+            order["payment"]["expires_at"] = expiry.isoformat()
+            order["payment"]["expired"] = order["status"] == "awaiting_payment" and expiry <= datetime.now(timezone.utc)
         view = {
             "id": order["id"], "number": order["number"],
             "status": order["status"],
@@ -556,9 +604,61 @@ class App:
             "paid_at": order.get("paid_at"),
             "shipped_at": order.get("shipped_at"),
             "history": order.get("history", []),
-            "can_cancel": order["status"] == "awaiting_payment",
+            "can_cancel": order["status"] == "awaiting_payment" and not order["payment"].get("review_required"),
         })
         return view
+
+    def webhook_mercadopago(self, query: dict, payload: dict) -> dict:
+        if getattr(self.payments, "name", "") != "mercadopago":
+            raise ApiError(503, "Payment unavailable", "payments_disabled")
+        order = self.orders.get(str(query.get("order") or ""))
+        if not order:
+            raise ApiError(404, "Order not found", "not_found")
+        try:
+            payment = self.payments.verified_payment(order, query, payload)
+        except PermissionError as exc:
+            raise ApiError(401, str(exc), "bad_signature") from exc
+        except PaymentMismatch as exc:
+            raise ApiError(400, str(exc), "payment_mismatch") from exc
+        except ValueError as exc:
+            raise ApiError(503, str(exc), "payment_verification_failed") from exc
+        if not payment:
+            return {"ok": True, "ignored": True}
+        return {"ok": True, **self._apply_mercadopago_payment(order, payment)}
+
+    def _apply_mercadopago_payment(self, order: dict, payment: dict) -> dict:
+        payment_id = str(payment["id"])
+        order["payment"]["last_checked_at"] = now_iso()
+        if order["status"] == "awaiting_payment" and not order["payment"].get("review_required"):
+            order["payment"]["provider_status"] = payment.get("status")
+            if payment.get("status") in {"pending", "in_process", "authorized", "in_mediation", "rejected", "cancelled"}:
+                order["payment"]["status"] = payment["status"]
+        self.orders._save(order)
+        if payment.get("status") in {"refunded", "charged_back"}:
+            if order.get("payment", {}).get("payment_id") == payment_id and order["status"] in {"paid", "packing", "shipped", "delivered"}:
+                self.orders.transition(order["number"], "refunded")
+            return {"changed": False}
+        if payment.get("status") != "approved":
+            return {"changed": False}
+        if order["status"] != "awaiting_payment":
+            if order["status"] == "cancelled" or order.get("payment", {}).get("payment_id") != payment_id:
+                order["payment"]["review_required"] = True
+                self.orders._save(order)
+            return {"changed": False}
+        if order["payment"].get("review_required"):
+            return {"changed": False, "review_required": True}
+        if order["number"] not in self.catalog._reservation_rows():
+            order["payment"]["review_required"] = True
+            order["payment"]["payment_id"] = payment_id
+            self.orders._save(order)
+            return {"changed": False, "review_required": True}
+        order, changed = self.orders.mark_paid(order["number"],
+            provider_ref=str(payment["id"]), amount_minor=order["total_minor"], source="mercadopago")
+        if changed:
+            order["payment"]["payment_id"] = payment_id
+            self.orders._save(order)
+            self.send_order_paid(order)
+        return {"changed": changed}
 
     def webhook_asaas(self, headers: dict, payload: object) -> dict:
         if getattr(self.payments, "name", "") != "asaas":
@@ -733,6 +833,77 @@ class App:
             key=f"contact:{row['id']}")
         return {"ok": True, "message": "Recebido! Respondemos em breve."}
 
+    # -- reviews ------------------------------------------------------
+    def admin_reviews(self) -> dict:
+        names = {row["id"]: row["name"] for row in self.catalog.all(active_only=False)}
+        return {"reviews": [{**row, "product_name": names.get(row["product_id"], "Produto indisponível")}
+                            for row in self.reviews.all(status="")]}
+
+    def list_reviews(self, *, product_id: str = "") -> dict:
+        """List approved reviews, optionally filtered by product."""
+        reviews = self.reviews.all(product_id=product_id, status="approved")
+        return {"reviews": [self.public_review(row) for row in reviews]}
+
+    @staticmethod
+    def public_review(review: dict) -> dict:
+        return {key: review[key] for key in (
+            "id", "product_id", "rating", "comment", "name", "created_at")}
+
+    def get_review(self, review_id: str) -> dict:
+        """Get a single review by ID."""
+        review = self.reviews.get(review_id)
+        if not review or review.get("status") != "approved":
+            raise ApiError(404, "avaliação não encontrada", "not_found")
+        return {"review": self.public_review(review)}
+
+    def create_review(self, payload: dict, *, customer: dict) -> dict:
+        """Create a new review (customer only)."""
+        if not customer or not customer.get("id"):
+            raise ApiError(401, "entre na sua conta para avaliar", "unauthorized")
+        if not isinstance(payload, dict):
+            raise ApiError(400, "avaliação inválida", "invalid_review")
+        order = next((row for row in self.orders.for_customer(customer["id"])
+                      if row["id"] == payload.get("order_id")), None)
+        if not order or order["status"] not in {"paid", "packing", "shipped", "delivered"} or not any(
+                item["product_id"] == payload.get("product_id") for item in order["items"]):
+            raise ApiError(403, "selecione uma compra paga deste produto", "purchase_required")
+        try:
+            review = self.reviews.create({**payload, "status": "pending"})
+        except (ReviewError, FieldError) as exc:
+            raise ApiError(400, str(exc), "invalid_review") from exc
+        return {"review": review, "message": "Avaliação enviada! Será publicada após aprovação."}
+
+    def update_review(self, review_id: str, payload: dict) -> dict:
+        """Update a review (admin only)."""
+        try:
+            review = self.reviews.update(review_id, payload)
+        except ReviewError as exc:
+            raise ApiError(400, str(exc), "invalid_review") from exc
+        return {"review": review}
+
+    def approve_review(self, review_id: str) -> dict:
+        """Approve a review (admin only)."""
+        try:
+            review = self.reviews.approve(review_id)
+        except ReviewError as exc:
+            raise ApiError(400, str(exc), "invalid_review") from exc
+        return {"review": review, "message": "Avaliação aprovada."}
+
+    def reject_review(self, review_id: str) -> dict:
+        """Reject a review (admin only)."""
+        try:
+            review = self.reviews.reject(review_id)
+        except ReviewError as exc:
+            raise ApiError(400, str(exc), "invalid_review") from exc
+        return {"review": review, "message": "Avaliação rejeitada."}
+
+    def delete_review(self, review_id: str) -> dict:
+        """Delete a review (admin only)."""
+        deleted = self.reviews.delete(review_id)
+        if not deleted:
+            raise ApiError(404, "avaliação não encontrada", "not_found")
+        return {"ok": True, "message": "Avaliação excluída."}
+
     # -- admin -------------------------------------------------------
     def require_admin(self, token: str, *, role: str = "") -> dict:
         admin = self.accounts.admin_for_token(token)
@@ -790,11 +961,18 @@ class App:
                               for row in orders[:8]],
             "default_admin": self.accounts.default_admin,
             "payment_mode": "demo" if getattr(self.payments, "name", "") == "demo"
-                            else "asaas",
+                            else getattr(self.payments, "name", "asaas"),
         }
 
     def admin_products(self) -> dict:
-        return {"products": self.products_store.read()}
+        return {"products": self.products_store.read(),
+                "media": self.media.available()}
+
+    def admin_upload_media(self, data: bytes, content_type: str) -> dict:
+        try:
+            return self.media.save(data, content_type)
+        except MediaError as exc:
+            raise ApiError(400, str(exc), "invalid_media") from exc
 
     def admin_create_product(self, payload: dict) -> dict:
         try:
@@ -930,6 +1108,8 @@ class App:
         return {"order": self.order_public(order)}
 
     def admin_set_status(self, number: str, payload: dict) -> dict:
+        if payload.get("status") == "paid" and getattr(self.payments, "name", "") == "mercadopago":
+            raise ApiError(403, "Payment confirmation requires the provider", "provider_required")
         try:
             if str(payload.get("status")) == "paid" and \
                     getattr(self.payments, "name", "") == "demo":
@@ -948,6 +1128,8 @@ class App:
         return {"order": self.order_public(order)}
 
     def admin_mark_paid(self, number: str, payload: dict) -> dict:
+        if getattr(self.payments, "name", "") == "mercadopago":
+            raise ApiError(403, "Payment confirmation requires the provider", "provider_required")
         try:
             order, changed = self.orders.mark_paid(
                 number, provider_ref=str(payload.get("provider_ref") or ""),

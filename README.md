@@ -6,10 +6,13 @@ panel for products, orders, customers, contacts and store settings.
 
 The current free launch uses Cloudflare Workers static assets and a private
 Supabase Edge Function backed by Postgres. Public address:
-https://mamyat.henriquealveslohrayne.workers.dev. No domain was purchased.
-Payments stay demo; email delivery and social sign-in are disabled. The Python
-stack remains available for local development. See [deployment](docs/deploy.md)
-and [free-tier decision](decisions/0010-free-workers-supabase-edge.md).
+https://mamyat.henriquealveslohrayne.workers.dev. The admin panel runs on a
+separate Workers.dev origin,
+https://mamyat-admin.henriquealveslohrayne.workers.dev/admin/, so the shop
+never serves the back office. No domain was purchased. Payments stay demo;
+email delivery and social sign-in are disabled. The Python stack remains
+available for local development. See [deployment](docs/deploy.md) and
+[free-tier decision](decisions/0010-free-workers-supabase-edge.md).
 
 ## Stack
 
@@ -22,6 +25,7 @@ and [free-tier decision](decisions/0010-free-workers-supabase-edge.md).
 | Captcha | Cloudflare Turnstile on signup, login, reset, contact, checkout |
 | Payments | Asaas Pix with webhook confirmation; demo rail when unconfigured |
 | Email | Resend Fetch; disabled live until sender verification |
+| Photos | Admin uploads to Supabase Storage (`product-media`), served as `/media/<key>` |
 | Deploy | Free Workers static assets + Supabase Edge/Postgres |
 
 ## Quick start
@@ -33,7 +37,8 @@ python scripts/dev.py            # API + auth sidecar + storefront
 
 That starts the API on `:8080`, the Better Auth sidecar on `:3100` and Next on
 `:3000`, and stops everything on Ctrl+C. Open http://localhost:3000; the admin
-panel is at `/admin`.
+panel is at `/admin` locally, while the free deployment serves it from its own
+origin (the storefront `/admin` redirects there).
 
 The panel password is printed on first boot and written to
 `data/runtime/admin_initial_password.txt` (change it in the panel). Optional
@@ -66,14 +71,17 @@ python scripts/smoke.py --base http://127.0.0.1:8099 --admin-password ...
 
 ## Layout
 
-`api/` the service; `foundry/` the vendored stdlib kit; `auth-server/` the
-Better Auth sidecar; `web/` the storefront; `supabase/` migrations;
-`docs/` runbooks; `decisions/` the decision log. Start with
-[ARCHITECTURE.md](ARCHITECTURE.md) and [docs/deploy.md](docs/deploy.md).
+`api/` the service; `api/media.py` the local photo store; `foundry/` the
+vendored stdlib kit; `auth-server/` the Better Auth sidecar; `web/` the
+storefront; `supabase/` migrations and the Edge API; `docs/` runbooks;
+`decisions/` the decision log. Start with [ARCHITECTURE.md](ARCHITECTURE.md)
+and [docs/deploy.md](docs/deploy.md).
 
 ## Cloudflare deployment
 
 From the project root: `npm ci`, `npm run setup:services`,
-`npm run deploy:check`, then `npm run deploy`. See [deployment](docs/deploy.md).
+`npm run deploy:check`, then `npm run deploy`. Publish Edge API changes with
+`npm run deploy:edge` after `npx supabase login`. See
+[deployment](docs/deploy.md).
 The setup command reads gitignored `.env.local`; production requires persistent
 Postgres, real Turnstile keys, and a verified Resend sending domain.

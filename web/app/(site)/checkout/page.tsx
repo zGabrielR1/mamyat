@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { ArrowLeft, Check, CreditCard, Loader2, MapPin, ShieldCheck, Store, Truck } from "lucide-react"
 import { toast } from "sonner"
 
@@ -32,6 +32,7 @@ function Checkout() {
   const [applied, setApplied] = React.useState(params.get("cupom") || "")
   const [quote, setQuote] = React.useState<Quote | null>(null)
   const [loadingQuote, setLoadingQuote] = React.useState(true)
+  const [quoteAttempt, setQuoteAttempt] = React.useState(0)
   const [submitting, setSubmitting] = React.useState(false)
   const [cepLoading, setCepLoading] = React.useState(false)
   const [captcha, setCaptcha] = React.useState("")
@@ -64,7 +65,10 @@ function Checkout() {
       setLoadingQuote(false)
       return
     }
+    let active = true
     setLoadingQuote(true)
+    setQuote(null)
+    setError("")
     api<Quote>("/api/cart/quote", {
       body: {
         items: items.map((item) => ({ product_id: item.productId, variant_id: item.variantId, qty: item.qty })),
@@ -72,10 +76,11 @@ function Checkout() {
         coupon: applied,
       },
     })
-      .then(setQuote)
-      .catch((failure: Error) => setError(failure.message))
-      .finally(() => setLoadingQuote(false))
-  }, [items, method, applied, hydrated])
+      .then((answer) => { if (active) setQuote(answer) })
+      .catch((failure: Error) => { if (active) setError(failure.message) })
+      .finally(() => { if (active) setLoadingQuote(false) })
+    return () => { active = false }
+  }, [items, method, applied, hydrated, quoteAttempt])
 
   const set = (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     let value = event.target.value
@@ -110,11 +115,11 @@ function Checkout() {
     event.preventDefault()
     setError("")
     if (!accepted) {
-      toast.error("Confirme que leu as políticas para continuar")
+      setError("Confirme que leu as políticas para continuar.")
       return
     }
     if (config.turnstile.enabled && !captcha) {
-      toast.error("Confirme o captcha para continuar")
+      setError("Aguarde a verificação de segurança e tente novamente.")
       return
     }
     setSubmitting(true)
@@ -139,7 +144,7 @@ function Checkout() {
       })
       clear()
       window.sessionStorage.setItem(`mamyat.order.${order.number}`, form.email)
-      window.location.assign(`/pedido/${order.number}?email=${encodeURIComponent(form.email)}`)
+      window.location.assign(order.payment.checkout_url || `/pedido/${order.number}?email=${encodeURIComponent(form.email)}`)
     } catch (failure) {
       const message = failure instanceof ApiFailure ? failure.message : "Não foi possível fechar o pedido"
       setError(message)
@@ -165,7 +170,7 @@ function Checkout() {
   }
 
   return (
-    <div className="container-page py-10 md:py-14">
+    <div className="container-page checkout-page py-10 md:py-14">
       <Link href="/carrinho" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline">
         <ArrowLeft className="size-4" /> Voltar para a sacola
       </Link>
@@ -179,7 +184,7 @@ function Checkout() {
         </p>
       </div>
 
-      <form onSubmit={submit} className="mt-8 grid gap-10 lg:grid-cols-[1.5fr_1fr]">
+      <form onSubmit={submit} aria-busy={submitting} className="mt-8 grid min-w-0 grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="space-y-8">
           <section className="rounded-xl border bg-card p-5">
             <h2 className="flex items-center gap-2 font-serif text-xl">
@@ -202,7 +207,7 @@ function Checkout() {
               <div>
                 <Label htmlFor="cpf">CPF do titular</Label>
                 <Input id="cpf" value={form.cpf} onChange={set("cpf")} required inputMode="numeric" placeholder="000.000.000-00" />
-                <p className="mt-1 text-xs text-muted-foreground">{config.payment.mode === "demo" ? "Use dados de teste neste ambiente de demonstração." : "Necessário para emitir a cobrança Pix."}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{config.payment.mode === "demo" ? "Use dados de teste neste ambiente de demonstração." : "Necessário para o pagamento."}</p>
               </div>
             </div>
           </section>
@@ -311,25 +316,29 @@ function Checkout() {
             <div className="mt-4 flex items-start gap-3 rounded-lg border border-primary bg-secondary/30 p-4">
               <CreditCard className="mt-0.5 size-4" />
               <div>
-                <p className="text-sm font-medium">{config.payment.mode === "demo" ? "Pedido de demonstração" : "Pix à vista"}</p>
+                <p className="text-sm font-medium">{config.payment.mode === "demo" ? "Pedido de demonstração" : config.payment.mode === "mercadopago" ? "Mercado Pago" : "Pix à vista"}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {config.payment.mode === "demo" ? "Nenhuma cobrança será emitida. Para uma compra real, fale com o ateliê pelo WhatsApp." : "O QR Code aparece na próxima tela. O pedido é confirmado automaticamente."}
+                  {config.payment.mode === "demo" ? "Nenhuma cobrança será emitida. Para uma compra real, fale com o ateliê pelo WhatsApp." : config.payment.mode === "mercadopago" ? "Escolha Pix ou cartão no checkout seguro do Mercado Pago." : "O QR Code aparece na próxima tela. O pedido é confirmado automaticamente."}
                 </p>
+                {config.payment.mode === "mercadopago" ? <div className="mt-3 flex flex-wrap gap-2"><Badge variant="outline">Pix</Badge><Badge variant="outline">Cartão de crédito</Badge></div> : null}
               </div>
               <Check className="ml-auto size-4" />
             </div>
             <div className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              Ambiente {config.payment.environment}. Não guardamos dados do seu cartão.
+              {config.payment.mode === "demo" ? "Ambiente de demonstração. Nenhum pagamento será cobrado." : "Pagamento protegido. Não guardamos dados do seu cartão."}
             </div>
           </section>
         </div>
 
         <aside className="h-fit space-y-4 lg:sticky lg:top-28">
-          <div className="rounded-xl border bg-card p-5">
+          <div className="rounded-xl border bg-card p-5" aria-busy={loadingQuote}>
             <h2 className="font-serif text-xl">Seu pedido</h2>
+            <p role="status" className="sr-only">{loadingQuote ? "Atualizando os valores do pedido." : quote ? "Valores do pedido atualizados." : "Não foi possível calcular o pedido."}</p>
             <ul className="mt-4 space-y-3">
-              {items.map((item) => (
+              {items.map((item) => {
+                const line = quote?.items.find((row) => row.product_id === item.productId && row.variant_id === item.variantId)
+                return (
                 <li key={`${item.productId}:${item.variantId}`} className="flex gap-3">
                   <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-secondary">
                     {item.image ? (
@@ -338,19 +347,20 @@ function Checkout() {
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1 text-sm">
-                    <p className="truncate font-medium">{item.name}</p>
+                    <p className="truncate font-medium">{line?.name || item.name}</p>
                     <p className="text-xs text-muted-foreground">{item.variantName} · {item.qty}x</p>
                   </div>
-                  <p className="text-sm">{brl(item.priceMinor * item.qty)}</p>
+                  <div className="text-sm">{loadingQuote ? <Skeleton className="h-4 w-16" /> : line ? brl(line.line_total_minor) : "—"}</div>
                 </li>
-              ))}
+                )
+              })}
             </ul>
             <Separator className="my-4" />
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{brl(quote?.subtotal_minor ?? 0)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span>{loadingQuote ? <Skeleton className="h-4 w-16" /> : <span>{quote ? brl(quote.subtotal_minor) : "—"}</span>}</div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Frete</span>
-                <span>{method === "pickup" ? "Retirada" : quote?.shipping_minor === 0 ? "Grátis" : brl(quote?.shipping_minor ?? 0)}</span>
+                {loadingQuote ? <Skeleton className="h-4 w-16" /> : <span>{!quote ? "—" : method === "pickup" ? "Retirada" : quote.shipping_minor === 0 ? "Grátis" : brl(quote.shipping_minor)}</span>}
               </div>
               {quote?.discount_minor ? (
                 <div className="flex justify-between text-emerald-700 dark:text-emerald-400"><span>Cupom</span><span>− {brl(quote.discount_minor)}</span></div>
@@ -358,11 +368,12 @@ function Checkout() {
               <Separator className="my-3" />
               <div className="flex items-baseline justify-between">
                 <span className="font-medium">Total</span>
-                <span className="text-xl font-medium">{brl(quote?.total_minor ?? 0)}</span>
+                {loadingQuote ? <Skeleton className="h-7 w-24" /> : <span className="text-xl font-medium">{quote ? brl(quote.total_minor) : "—"}</span>}
               </div>
             </div>
 
             {config.features.coupons ? (
+              <>
               <div className="mt-4 flex gap-2">
                 <Input
                   value={coupon}
@@ -375,6 +386,8 @@ function Checkout() {
                   Ok
                 </Button>
               </div>
+              {applied ? <button type="button" className="mt-2 text-xs text-muted-foreground underline hover:text-foreground" onClick={() => { setApplied(""); setCoupon("") }}>Remover cupom {applied}</button> : null}
+              </>
             ) : null}
 
             {quote?.problems?.length ? (
@@ -382,6 +395,7 @@ function Checkout() {
                 {quote.problems.map((problem) => <p key={problem}>{problem}</p>)}
               </div>
             ) : null}
+            {!loadingQuote && !quote ? <Button type="button" variant="outline" className="mt-4 w-full" onClick={() => setQuoteAttempt((value) => value + 1)}>Recalcular valores</Button> : null}
           </div>
 
           <div className="rounded-xl border bg-card p-5">
@@ -396,6 +410,7 @@ function Checkout() {
             <label className="flex items-start gap-2 text-xs text-muted-foreground">
               <input
                 type="checkbox"
+                required
                 checked={accepted}
                 onChange={(event) => setAccepted(event.target.checked)}
                 className="mt-0.5 size-4 accent-[var(--primary)]"
@@ -404,15 +419,15 @@ function Checkout() {
                 Li e aceito as <Link href="/politicas" className="underline">políticas de compra, troca e privacidade</Link>.
               </span>
             </label>
-            {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
-            <Button type="submit" size="lg" className="mt-4 w-full" disabled={submitting || loadingQuote || !quote?.ok}>
-              {submitting ? <><Loader2 className="size-4 animate-spin" /> Criando pedido...</> : config.payment.mode === "demo" ? "Criar pedido de demonstração" : "Fechar pedido e gerar Pix"}
+            {error ? <p role="alert" className="mt-3 text-sm text-destructive">{error}</p> : null}
+            <Button type="submit" size="lg" className="mt-4 h-auto min-h-12 w-full whitespace-normal px-3 py-3 text-center leading-snug" disabled={submitting || loadingQuote || !quote?.ok}>
+              {submitting ? <><Loader2 className="size-4 animate-spin" /> {config.payment.mode === "mercadopago" ? "Preparando pagamento..." : "Criando pedido..."}</> : config.payment.mode === "demo" ? "Criar pedido de demonstração" : config.payment.mode === "mercadopago" ? "Continuar para o Mercado Pago" : "Fechar pedido e gerar Pix"}
             </Button>
             {config.payment.mode === "demo" ? (
               <Badge variant="outline" className="mt-3 w-full justify-center py-1">Modo demonstração</Badge>
             ) : null}
             <p className="mt-3 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
-              {config.payment.mode === "demo" ? "A reserva de demonstração expira em 30 minutos." : "Ao fechar, reservamos as peças por 30 minutos enquanto o Pix é pago."}
+              {config.payment.mode === "demo" ? "A reserva de demonstração expira em 30 minutos." : "Ao fechar, reservamos as peças por 30 minutos enquanto o pagamento é concluído."}
             </p>
           </div>
         </aside>

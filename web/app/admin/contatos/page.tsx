@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Mail, MessageSquare, Search } from "lucide-react"
+import { Copy, Mail, MessageSquare, Search } from "lucide-react"
 import { toast } from "sonner"
 
 import { api } from "@/lib/api"
@@ -92,11 +92,27 @@ export default function AdminContactsPage() {
               <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                 {contact.message}
               </p>
-              <Button asChild size="sm" variant="outline" className="mt-4">
-                <a href={`mailto:${contact.email}?subject=${encodeURIComponent("Re: sua mensagem para o Mamy Ateliê")}`}>
-                  <Mail className="size-3.5" /> Responder por email
-                </a>
-              </Button>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <a href={`mailto:${contact.email}?subject=${encodeURIComponent("Re: sua mensagem para o Mamy Ateliê")}`}>
+                    <Mail className="size-3.5" /> Responder por email
+                  </a>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(contact.email)
+                      toast.success("Email copiado")
+                    } catch {
+                      toast.error("Não foi possível copiar")
+                    }
+                  }}
+                >
+                  <Copy className="size-3.5" /> Copiar email
+                </Button>
+              </div>
             </article>
           ))}
         </div>

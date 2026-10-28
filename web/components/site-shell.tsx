@@ -68,7 +68,7 @@ export function SiteHeader() {
           {config.store.announcement}
         </div>
       ) : null}
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur">
+      <header data-store-header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur">
         <div className="container-page flex h-16 items-center justify-between gap-4 md:h-20">
           <div className="flex items-center gap-2 md:hidden">
             <Sheet open={menu} onOpenChange={setMenu}>
@@ -96,6 +96,7 @@ export function SiteHeader() {
                       {item.label}
                     </Link>
                   ))}
+                  <Link href="/loja?salvos=1" className="rounded-lg px-3 py-3 text-base hover:bg-muted">Peças salvas</Link>
                   <Link href="/pedido" className="rounded-lg px-3 py-3 text-base hover:bg-muted">
                     Acompanhar pedido
                   </Link>
@@ -249,7 +250,7 @@ export function SiteFooter() {
       <div className="border-t border-border/70 py-5">
         <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-muted-foreground md:flex-row">
           <p>© {new Date().getFullYear()} Mamy Ateliê · CNPJ {config.store.cnpj || "a informar"}</p>
-          <p>Pix à vista · Envio para todo o Brasil</p>
+          <p>{config.payment.mode === "mercadopago" ? "Pix e cartão pelo Mercado Pago" : "Pix à vista"} · Envio para todo o Brasil</p>
         </div>
       </div>
     </footer>

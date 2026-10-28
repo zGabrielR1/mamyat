@@ -38,4 +38,10 @@ Thumbs.db
 .npm-cache/
 .agents/
 .playwright-mcp/
+.taste-skill/
 web/out/
+
+# Local CLI/editor state and accidental shell output
+.codex/
+supabase/.temp/
+web/console.log(x

@@ -258,7 +258,15 @@ class DemoPayments:
 
 def resolve_payments(env: dict[str, str] | None = None,
                      env_file: str = DEFAULT_ENV_FILE):
-    """Asaas when configured, DemoPayments otherwise. Never raises."""
+    """Prefer configured Mercado Pago; otherwise Asaas or clearly labelled demo.
+
+    Invalid Mercado Pago settings raise rather than silently enabling demo.
+    """
+    source = env if env is not None else dict(os.environ)
+    if source.get("MERCADOPAGO_ACCESS_TOKEN") or source.get("ACESS_TOKEN"):
+        from .mercadopago import MercadoPagoPayments
+        payments = MercadoPagoPayments(source)
+        return payments, payments.config
     config = AsaasConfig.from_env(env, env_file)
     if not config.configured:
         return DemoPayments(), config

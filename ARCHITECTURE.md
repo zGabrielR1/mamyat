@@ -1,5 +1,14 @@
 # Current free hosting
 
+Production Mercado Pago Checkout Pro is implemented in
+`supabase/functions/shop-api/mercadopago.mjs` and `api/mercadopago.py`.
+See [decision 0013](decisions/0013-mercadopago-checkout-pro.md) and
+[the payment runbook](docs/mercadopago.md). Activation requires publishing the
+Edge function with its private payment settings and rebuilding the storefront.
+Payment returns are verified through a customer-authorized status endpoint;
+see [decision 0014](decisions/0014-payment-return-experience.md). It shares the
+provider transition with webhooks and does not trust browser status values.
+
 The free production path is Cloudflare Workers static assets -> authenticated
 Supabase Edge Function -> private Supabase Postgres. See
 [decision 0010](decisions/0010-free-workers-supabase-edge.md) for transactions,
@@ -35,6 +44,7 @@ as one unit. Local development keeps the existing three-process runner.
 | `api/orders.py` | quote, reservations, order lifecycle, status machine, idempotency |
 | `api/catalog.py` | products, variants, validation, stock |
 | `api/accounts.py` | customers, admins, password policy, sessions, social links, resets |
+| `api/media.py` | product-image validation, filesystem media store, `/media/<key>` |
 | `api/sessions.py` | `ms1.<payload>.<sig>` tokens + revocation registry |
 | `api/asaas.py` | Asaas Pix client, webhook parsing, `DemoPayments` fallback |
 | `api/db.py` | `SqlStore` / `JsonStore` factory — the storage seam |
@@ -88,10 +98,19 @@ only writers.
 
 ## Admin surface
 
-`/admin` is a client-rendered section of the same Next app. Every action goes
-through `api/server.py` → `App.admin_*` with `X-Admin-Token`; the pages never
-decide a rule.
+The panel is a client-rendered section of the same Next app, but the free
+deployment serves it from a second Worker on its own origin
+(`mamyat-admin.<account>.workers.dev`). `cloudflare/admin-worker.ts` allows only
+`/admin/*`, shared static assets, `/api/admin/*` and `/api/health`, and adds
+`noindex`/frame-denial headers. The storefront Worker redirects `/admin` and
+`/admin/*` there with a 308. Every action goes through `api/server.py` →
+`App.admin_*` with `X-Admin-Token`; the pages never decide a rule. The Python
+and Edge APIs both enforce the `viewer` role as read-only.
 
+- **Product photos** — browser-side resize/WebP encode, `POST /api/admin/media`,
+  Supabase Storage `product-media` bucket, stable `/media/<key>` URLs served by
+  both Workers. Local Python stores files under `MEDIA_DIR`. Objects are
+  append-only so order snapshots survive product edits (decisions 0011/0012).
 - **Catalog** — create/edit/archive products, variants and stock; the category
   list lives in `settings["categories"]` and is edited through
   `api/app.py` (`admin_categories`, `admin_create_category`,
@@ -103,8 +122,17 @@ decide a rule.
   with a generated password.
 - **Orders** — the existing status machine, plus manual payment confirmation in
   demo mode.
-- **Monitor** — dashboard aggregates revenue, ticket, low stock and best
-  sellers from the same stores the storefront reads.
+- **Monitor** — dashboard aggregates revenue, ticket, order pipeline, alerts,
+  low stock and best sellers from the same stores the storefront reads.
+- **Operations** — CSV exports for orders, products and customers; date/status
+  filters; quick stock replenishment; product duplication; idle-session
+  sign-out; immediate sign-out on an expired token.
+- **Atelier workspace** — `/admin/operacao` derives production/dispatch queues,
+  stock priorities and creation-date gross sales from existing authenticated
+  order/product endpoints. It fetches fresh full snapshots for selected picking
+  printouts and uses existing status mutations; no new storage or commerce rules.
+  Browser-saved storefront pieces contain product IDs only and do not alter the
+  customer account or server catalog. See decision 0015.
 
 See [docs/admin.md](docs/admin.md) for the field rules and endpoint map.
 
@@ -121,6 +149,11 @@ Collections: `products`, `orders`, `customers`, `admins`, `admin_sessions`,
 `password_resets`, `oauth_links`, `settings`, `reservations`, `contacts`,
 `customer_sessions`.
 
+Product images are the one exception: the bytes live in Supabase Storage's
+public `product-media` bucket (or `MEDIA_DIR` on a local Python run), while the
+product document stores only `/media/<key>` paths. The Workers proxy
+`/media/*` to the bucket and cache the immutable URLs.
+
 ## Optional rails (all fail safe)
 
 | Rail | Configured by | Unconfigured behaviour |
@@ -129,6 +162,7 @@ Collections: `products`, `orders`, `customers`, `admins`, `admin_sessions`,
 | Email | `RESEND_API_KEY` + `MAIL_FROM` | console mailer |
 | Captcha | `TURNSTILE_SECRET_KEY` + site key | verifier disabled, gate is a no-op |
 | Social | provider credentials + `BETTER_AUTH_SECRET` | buttons hidden, endpoints report disabled |
+| Media | `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (Edge), `MEDIA_DIR` (Python) | upload control hidden, URL/path images still work |
 | Postgres | `DATABASE_URL` | JSON files under `DATA_DIR` |
 
 ## Frontend

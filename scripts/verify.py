@@ -33,8 +33,14 @@ FAIL: list[str] = []
 
 REQUIRED = [
     "README.md", "AGENTS.md", "ARCHITECTURE.md", "PROGRESS.md", "CURRENTTASK",
-    "Makefile", "requirements.txt", "Dockerfile.cloudflare", "wrangler.jsonc", ".env.example",
-    ".gitignore", ".dockerignore",
+    "Makefile", "requirements.txt", "Dockerfile.cloudflare", "wrangler.jsonc",
+    "wrangler.free.jsonc", "wrangler.admin.jsonc", ".env.example",
+    "cloudflare/free-worker.ts", "cloudflare/admin-worker.ts",
+    "cloudflare/shop-proxy.ts", "cloudflare/media.ts",
+    "api/media.py", "supabase/migrations/20261021000000_product_media.sql",
+    "decisions/0011-product-media-storage.md",
+    "decisions/0012-media-validation-and-lifecycle.md",
+    "scripts/deploy_edge.mjs", ".gitignore", ".dockerignore",
     "docs/deploy.md", "docs/oauth.md", "docs/mail.md", "docs/turnstile.md",
     "docs/asaas.md", "docs/supabase.md", "docs/needed-from-owner.md",
     "docs/admin.md",

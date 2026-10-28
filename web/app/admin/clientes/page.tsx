@@ -8,6 +8,7 @@ import {
   Download,
   Loader2,
   Mail,
+  MessageCircle,
   Search,
   ShieldOff,
   Users,
@@ -32,11 +33,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { brl, formatPhone, orderStatusTone } from "@/lib/utils"
-
-function csvCell(value: string) {
-  return `"${(value || "").replace(/"/g, '""')}"`
-}
+import { brl, downloadCsv, formatPhone, formatWhatsapp, orderStatusTone, whatsappHref } from "@/lib/utils"
 
 type EditForm = {
   name: string
@@ -71,6 +68,7 @@ function CustomerEditor({
   onOpenChange: (open: boolean) => void
   onChanged: () => void
 }) {
+  const { canWrite } = useAdmin()
   const [detail, setDetail] = React.useState<AdminCustomerDetail | null>(null)
   const [form, setForm] = React.useState<EditForm | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -227,6 +225,17 @@ function CustomerEditor({
                 <div>
                   <Label htmlFor="c-phone">Telefone</Label>
                   <Input id="c-phone" value={form.phone} onChange={(event) => set("phone", event.target.value)} placeholder="(11) 99999-9999" />
+                  {form.phone ? (
+                    <a
+                      href={whatsappHref(form.phone, `Olá, ${form.name || "tudo bem"}! Falo do ateliê Mamy.`)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                    >
+                      <MessageCircle className="size-3.5" />
+                      WhatsApp {formatWhatsapp(form.phone)}
+                    </a>
+                  ) : null}
                 </div>
                 <div>
                   <Label htmlFor="c-cpf">CPF</Label>
@@ -255,29 +264,37 @@ function CustomerEditor({
               </div>
 
               <DialogFooter className="gap-2 sm:justify-between">
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={form.active ? "outline" : "secondary"}
-                    size="sm"
-                    disabled={Boolean(busy)}
-                    onClick={() => save({ active: !form.active })}
-                  >
-                    {form.active ? <Ban className="size-4" /> : <CheckCircle2 className="size-4" />}
-                    {form.active ? "Bloquear conta" : "Desbloquear"}
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" disabled={Boolean(busy)} onClick={sendReset}>
-                    {busy === "reset" ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
-                    Enviar redefinição
-                  </Button>
-                  <Button type="button" variant="destructive" size="sm" disabled={Boolean(busy)} onClick={anonymize}>
-                    {busy === "delete" ? <Loader2 className="size-4 animate-spin" /> : <ShieldOff className="size-4" />}
-                    {confirmDelete ? "Confirmar anonimização" : "Anonimizar"}
-                  </Button>
-                </div>
-                <Button type="submit" disabled={Boolean(busy)}>
-                  {busy === "save" ? <Loader2 className="size-4 animate-spin" /> : "Salvar"}
-                </Button>
+                {canWrite ? (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant={form.active ? "outline" : "secondary"}
+                        size="sm"
+                        disabled={Boolean(busy)}
+                        onClick={() => save({ active: !form.active })}
+                      >
+                        {form.active ? <Ban className="size-4" /> : <CheckCircle2 className="size-4" />}
+                        {form.active ? "Bloquear conta" : "Desbloquear"}
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" disabled={Boolean(busy)} onClick={sendReset}>
+                        {busy === "reset" ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+                        Enviar redefinição
+                      </Button>
+                      <Button type="button" variant="destructive" size="sm" disabled={Boolean(busy)} onClick={anonymize}>
+                        {busy === "delete" ? <Loader2 className="size-4 animate-spin" /> : <ShieldOff className="size-4" />}
+                        {confirmDelete ? "Confirmar anonimização" : "Anonimizar"}
+                      </Button>
+                    </div>
+                    <Button type="submit" disabled={Boolean(busy)}>
+                      {busy === "save" ? <Loader2 className="size-4 animate-spin" /> : "Salvar"}
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Conta somente leitura: os dados podem ser consultados, mas não alterados.
+                  </p>
+                )}
               </DialogFooter>
             </form>
 
@@ -465,7 +482,7 @@ function NewCustomerDialog({
 }
 
 export default function AdminCustomersPage() {
-  const { admin } = useAdmin()
+  const { admin, canWrite } = useAdmin()
   const [customers, setCustomers] = React.useState<Customer[]>([])
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState("")
@@ -502,8 +519,8 @@ export default function AdminCustomersPage() {
   })
 
   const exportCsv = () => {
-    const rows = [
-      ["Nome", "Usuário", "Email", "Telefone", "CPF", "Status", "Cadastro"],
+    downloadCsv("clientes-mamyatelie.csv", [
+      ["Nome", "Usuário", "Email", "Telefone", "CPF", "Status", "Marketing", "Origem", "Cadastro"],
       ...filtered.map((customer) => [
         customer.name,
         customer.username,
@@ -511,17 +528,12 @@ export default function AdminCustomersPage() {
         customer.phone,
         customer.cpf,
         customer.active ? "ativa" : "bloqueada",
+        customer.marketing ? "sim" : "não",
+        customer.provider || "email",
         customer.created_at ? new Date(customer.created_at).toLocaleDateString("pt-BR") : "",
       ]),
-    ]
-    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n")
-    const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement("a")
-    anchor.href = url
-    anchor.download = "clientes-mamyatelie.csv"
-    anchor.click()
-    URL.revokeObjectURL(url)
+    ])
+    toast.success(`${filtered.length} cliente(s) exportado(s)`)
   }
 
   const openCustomer = (id: string) => {
@@ -562,7 +574,7 @@ export default function AdminCustomersPage() {
           <Button variant="outline" onClick={exportCsv} disabled={!filtered.length}>
             <Download className="size-4" /> CSV
           </Button>
-          <Button onClick={() => setCreateOpen(true)}>Novo cliente</Button>
+          {canWrite ? <Button onClick={() => setCreateOpen(true)}>Novo cliente</Button> : null}
         </div>
       </div>
 

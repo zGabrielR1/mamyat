@@ -10,9 +10,9 @@ const SECTIONS = [
     id: "pedidos",
     title: "Pedidos e pagamento",
     body: [
-      "Os pedidos são confirmados após o pagamento via Pix. As peças ficam reservadas por 30 minutos enquanto o Pix está em aberto; se o pagamento não cair nesse prazo, a reserva pode ser liberada automaticamente.",
+      "Os pedidos são confirmados após a confirmação do pagamento pelo provedor. As peças ficam reservadas por 30 minutos enquanto o pagamento está em aberto; se o pagamento não cair nesse prazo, a reserva pode ser liberada automaticamente.",
       "Os preços são em reais e já incluem o valor da peça. Frete e cupons aparecem no checkout antes da confirmação. Peças sob encomenda têm prazo de produção informado na página do produto.",
-      "Pagamentos são processados pelo Asaas. O ateliê não armazena dados de cartão.",
+      "Os pagamentos são processados de forma segura pelo provedor indicado no checkout. O ateliê não armazena dados de cartão.",
     ],
   },
   {
@@ -37,7 +37,7 @@ const SECTIONS = [
     id: "privacidade",
     title: "Privacidade",
     body: [
-      "Coletamos apenas os dados necessários para atender o pedido: nome, email, telefone, CPF (para emissão da cobrança Pix) e endereço. Esses dados são compartilhados somente com os serviços de pagamento e envio envolvidos na compra.",
+      "Coletamos apenas os dados necessários para atender o pedido: nome, email, telefone, CPF e endereço. Esses dados são compartilhados somente com os serviços de pagamento e envio envolvidos na compra.",
       "Sua senha é guardada com hash forte; não temos acesso a ela. Você pode solicitar a exclusão da conta e dos dados a qualquer momento pelo email do ateliê.",
       "Não vendemos dados e não enviamos marketing sem consentimento.",
     ],

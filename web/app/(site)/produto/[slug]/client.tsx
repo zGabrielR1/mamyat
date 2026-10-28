@@ -3,7 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ChevronRight, Minus, Plus, ShieldCheck, Sparkles, Truck } from "lucide-react"
+import { ChevronRight, Minus, Plus, ShieldCheck, Sparkles, Truck, Heart } from "lucide-react"
+import { useSaved } from "@/lib/saved"
 import { toast } from "sonner"
 
 import { api } from "@/lib/api"
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ProductCard } from "@/components/product-card"
+import { ProductReviews } from "@/components/product-reviews"
 import { WhatsAppIcon } from "@/components/icons"
 import { brl, cn, formatWhatsapp, whatsappHref } from "@/lib/utils"
 
@@ -28,6 +30,8 @@ export default function ProductPage() {
   const [error, setError] = React.useState("")
   const [variantId, setVariantId] = React.useState("")
   const [qty, setQty] = React.useState(1)
+  const [imageIndex, setImageIndex] = React.useState(0)
+  const { saved, toggle } = useSaved()
 
   React.useEffect(() => {
     if (!slug) return
@@ -36,6 +40,7 @@ export default function ProductPage() {
     api<{ product: Product; related: Product[] }>(`/api/products/${slug}`)
       .then((answer) => {
         setProduct(answer.product)
+        setImageIndex(0)
         setRelated(answer.related)
         const first = answer.product.variants.find((variant) => variant.available > 0) ||
           answer.product.variants[0]
@@ -79,7 +84,7 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="container-page py-8 md:py-12">
+    <div className="container-page product-page py-8 md:py-12">
       <nav className="flex items-center gap-1 text-xs text-muted-foreground" aria-label="Trilha">
         <Link href="/loja" className="hover:underline">Loja</Link>
         <ChevronRight className="size-3" />
@@ -91,12 +96,12 @@ export default function ProductPage() {
       </nav>
 
       <div className="mt-6 grid gap-10 md:grid-cols-[1.05fr_1fr] md:gap-14">
-        <div>
+        <div className="product-gallery">
           <div className="overflow-hidden rounded-2xl bg-secondary ring-1 ring-border">
             {product.images[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={product.images[0]}
+                src={product.images[imageIndex] || product.images[0]}
                 alt={product.name}
                 className="aspect-[4/5] w-full object-cover"
               />
@@ -108,14 +113,10 @@ export default function ProductPage() {
           </div>
           {product.images.length > 1 ? (
             <div className="mt-3 grid grid-cols-5 gap-2">
-              {product.images.slice(1).map((image) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={image}
-                  src={image}
-                  alt=""
-                  className="aspect-square w-full rounded-lg bg-secondary object-cover"
-                />
+              {product.images.map((image,index) => (
+                <button key={`${image}:${index}`} aria-label={`Ver imagem ${index+1} de ${product.name}`} aria-pressed={imageIndex === index} onClick={() => setImageIndex(index)} className={cn("overflow-hidden bg-secondary", imageIndex === index && "ring-2 ring-primary")}>
+                  <img src={image} alt="" className="aspect-square w-full object-cover" />
+                </button>
               ))}
             </div>
           ) : null}
@@ -126,6 +127,7 @@ export default function ProductPage() {
             {product.category}
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-tight md:text-5xl">{product.name}</h1>
+          <button className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm" aria-pressed={saved.includes(product.id)} onClick={() => toggle(product.id)}><Heart size={17} fill={saved.includes(product.id) ? "currentColor" : "none"}/>{saved.includes(product.id) ? "Peça salva" : "Salvar para depois"}</button>
           <div className="mt-4 flex flex-wrap items-baseline gap-3">
             <span className="text-2xl font-medium">{brl(product.price_minor)}</span>
             {product.compare_at_minor ? (
@@ -138,7 +140,7 @@ export default function ProductPage() {
             ) : null}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {config.payment.mode === "demo" ? "Loja em demonstração · nenhum pagamento será cobrado" : "Pix à vista"}
+            {config.payment.mode === "demo" ? "Loja em demonstração · nenhum pagamento será cobrado" : config.payment.mode === "mercadopago" ? "Pix e cartão pelo Mercado Pago" : "Pix à vista"}
           </p>
 
           <Separator className="my-6" />
@@ -291,6 +293,8 @@ export default function ProductPage() {
           </div>
         </section>
       ) : null}
+
+      <ProductReviews productId={product.id} productName={product.name} />
     </div>
   )
 }

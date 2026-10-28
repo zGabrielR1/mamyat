@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Loader2, MessageCircle, Plus, Save, Trash2 } from "lucide-react"
+import { ExternalLink, Loader2, MessageCircle, Plus, Save, ShieldCheck, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { api } from "@/lib/api"
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatWhatsapp, whatsappHref } from "@/lib/utils"
+import { formatWhatsapp, storefrontHref, whatsappHref } from "@/lib/utils"
 
 type CouponRow = {
   code: string
@@ -75,7 +75,7 @@ function cents(value: string) {
 }
 
 export default function AdminSettingsPage() {
-  const { admin, setMustChange } = useAdmin()
+  const { admin, canWrite, setMustChange } = useAdmin()
   const [form, setForm] = React.useState<Settings | null>(null)
   const [coupons, setCoupons] = React.useState<CouponRow[]>([])
   const [shipping, setShipping] = React.useState({ flat: "18,00", free: "250,00" })
@@ -84,6 +84,11 @@ export default function AdminSettingsPage() {
   const [busy, setBusy] = React.useState(false)
   const [passwords, setPasswords] = React.useState({ current: "", next: "", confirm: "" })
   const [passwordBusy, setPasswordBusy] = React.useState(false)
+  const [panelOrigin, setPanelOrigin] = React.useState("")
+
+  React.useEffect(() => {
+    setPanelOrigin(window.location.origin)
+  }, [])
 
   React.useEffect(() => {
     if (!admin) return
@@ -193,6 +198,12 @@ export default function AdminSettingsPage() {
         </p>
       </div>
 
+      {!canWrite ? (
+        <p className="rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+          Esta conta é somente leitura: as configurações podem ser consultadas, mas não alteradas.
+        </p>
+      ) : null}
+
       <form onSubmit={save} className="space-y-6">
         <section className="rounded-xl border bg-card p-5">
           <h2 className="font-serif text-xl">Identidade</h2>
@@ -289,17 +300,19 @@ export default function AdminSettingsPage() {
         <section className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-xl">Cupons</h2>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setCoupons((current) => [
-                ...current,
-                { code: "", type: "percent", value: "10", min: "0,00", label: "", active: true },
-              ])}
-            >
-              <Plus className="size-3.5" /> Novo cupom
-            </Button>
+            {canWrite ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setCoupons((current) => [
+                  ...current,
+                  { code: "", type: "percent", value: "10", min: "0,00", label: "", active: true },
+                ])}
+              >
+                <Plus className="size-3.5" /> Novo cupom
+              </Button>
+            ) : null}
           </div>
           <div className="mt-4 space-y-3">
             {coupons.length === 0 ? (
@@ -350,15 +363,17 @@ export default function AdminSettingsPage() {
                       />
                       ativo
                     </label>
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      onClick={() => setCoupons((current) => current.filter((_, position) => position !== index))}
-                      aria-label="Remover cupom"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    {canWrite ? (
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        onClick={() => setCoupons((current) => current.filter((_, position) => position !== index))}
+                        aria-label="Remover cupom"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               ))
@@ -366,12 +381,14 @@ export default function AdminSettingsPage() {
           </div>
         </section>
 
-        <div className="flex justify-end">
-          <Button type="submit" size="lg" disabled={busy}>
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            Salvar configurações
-          </Button>
-        </div>
+        {canWrite ? (
+          <div className="flex justify-end">
+            <Button type="submit" size="lg" disabled={busy}>
+              {busy ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              Salvar configurações
+            </Button>
+          </div>
+        ) : null}
       </form>
 
       <Separator />
@@ -420,6 +437,34 @@ export default function AdminSettingsPage() {
             {passwordBusy ? <Loader2 className="size-4 animate-spin" /> : "Trocar senha"}
           </Button>
         </form>
+      </section>
+
+      <section className="rounded-xl border bg-card p-5">
+        <h2 className="font-serif text-xl">Acessos</h2>
+        <div className="mt-3 space-y-2 text-sm">
+          <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
+            <span className="w-20 shrink-0 text-xs uppercase tracking-wide">Loja</span>
+            <a
+              href={storefrontHref("/")}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-foreground hover:underline"
+            >
+              {storefrontHref("/")} <ExternalLink className="size-3" />
+            </a>
+          </p>
+          <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
+            <span className="w-20 shrink-0 text-xs uppercase tracking-wide">Painel</span>
+            <span className="inline-flex items-center gap-1.5 text-foreground">
+              {panelOrigin ? `${panelOrigin}/admin/` : "/admin/"}
+              <ShieldCheck className="size-3.5" />
+            </span>
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            O painel roda em uma origem própria, separada da loja. A sessão é encerrada
+            automaticamente após 30 minutos sem atividade.
+          </p>
+        </div>
       </section>
 
       {health ? (

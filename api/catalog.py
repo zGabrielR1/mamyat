@@ -134,7 +134,7 @@ def validate_product(payload: object, *, existing: dict | None = None,
     if category.casefold() not in allowed:
         raise CatalogError("categoria desconhecida")
     category = allowed[category.casefold()]
-    slug = slugify(payload.get("slug") or name)
+    slug = slugify(payload.get("slug") or base.get("slug") or name)
     if not slug:
         raise CatalogError("o nome precisa gerar um endereço válido")
     variants = _clean_variants(payload.get("variants", base.get("variants")))

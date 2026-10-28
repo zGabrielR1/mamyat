@@ -13,12 +13,18 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { useSaved } from "@/lib/saved"
 
 type Sort = "featured" | "price-asc" | "price-desc" | "name"
 
 function Catalog() {
   const params = useSearchParams()
   const category = params.get("categoria") || ""
+  const { saved } = useSaved()
+  const [availability, setAvailability] = React.useState(params.get("disponibilidade") || "")
+  const [budget, setBudget] = React.useState("")
+  const [savedOnly, setSavedOnly] = React.useState(params.get("salvos") === "1")
+  const [retry, setRetry] = React.useState(0)
   const [query, setQuery] = React.useState("")
   const [debounced, setDebounced] = React.useState("")
   const [sort, setSort] = React.useState<Sort>("featured")
@@ -26,6 +32,12 @@ function Catalog() {
   const [categories, setCategories] = React.useState<Category[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState("")
+  const routeFilters = params.toString()
+  React.useEffect(() => {
+    const search = new URLSearchParams(routeFilters)
+    setAvailability(search.get("disponibilidade") || "")
+    setSavedOnly(search.get("salvos") === "1")
+  }, [routeFilters])
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => setDebounced(query.trim()), 300)
@@ -33,6 +45,7 @@ function Catalog() {
   }, [query])
 
   React.useEffect(() => {
+    let active = true
     setLoading(true)
     setError("")
     const search = new URLSearchParams()
@@ -40,15 +53,17 @@ function Catalog() {
     if (debounced) search.set("q", debounced)
     api<{ products: Product[]; categories: Category[] }>(`/api/products?${search.toString()}`)
       .then((answer) => {
+        if (!active) return
         setProducts(answer.products)
         setCategories(answer.categories)
       })
-      .catch((failure: Error) => setError(failure.message))
-      .finally(() => setLoading(false))
-  }, [category, debounced])
+      .catch((failure: Error) => { if (active) setError(failure.message) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [category, debounced, retry])
 
   const sorted = React.useMemo(() => {
-    const rows = [...products]
+    const rows = products.filter(p => (!budget || p.price_minor <= Number(budget)) && (!savedOnly || saved.includes(p.id)) && (!availability || (availability === "pronta" ? !p.made_to_order && p.available > 0 : p.made_to_order)))
     switch (sort) {
       case "price-asc":
         return rows.sort((a, b) => a.price_minor - b.price_minor)
@@ -59,10 +74,10 @@ function Catalog() {
       default:
         return rows
     }
-  }, [products, sort])
+  }, [products, sort, budget, availability, savedOnly, saved])
 
   return (
-    <div className="container-page py-10 md:py-14">
+    <div className="container-page catalog-page py-10 md:py-14">
       <div className="max-w-2xl">
         <p className="text-[0.7rem] uppercase tracking-[0.25em] text-muted-foreground">A loja</p>
         <h1 className="mt-2 font-serif text-4xl md:text-5xl">
@@ -102,7 +117,7 @@ function Catalog() {
           </div>
         </div>
 
-        <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
+        <div className="flex flex-wrap gap-2 pb-1">
           <Button asChild size="sm" variant={!category ? "default" : "outline"}>
             <Link href="/loja">Tudo</Link>
           </Button>
@@ -123,9 +138,17 @@ function Catalog() {
         </div>
       </div>
 
+      <div className="catalog-refine">
+        <label>Disponibilidade<select value={availability} onChange={e => setAvailability(e.target.value)}><option value="">Todas as peças</option><option value="pronta">Pronta entrega</option><option value="encomenda">Sob encomenda</option></select></label>
+        <label>Seu orçamento<select value={budget} onChange={e => setBudget(e.target.value)}><option value="">Qualquer valor</option><option value="5000">Até R$ 50</option><option value="10000">Até R$ 100</option><option value="20000">Até R$ 200</option></select></label>
+        <button className="saved-filter" aria-pressed={savedOnly} onClick={() => setSavedOnly(v => !v)}>{savedOnly ? "Mostrando salvos" : "Minhas peças salvas"} ({saved.length})</button>
+        <p aria-live="polite">{loading ? "Buscando peças…" : `${sorted.length} ${sorted.length === 1 ? "peça encontrada" : "peças encontradas"}`}</p>
+      </div>
+
       {error ? (
         <p className="mt-10 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
+          <button className="ml-3 underline" onClick={() => setRetry(v => v + 1)}>Tentar novamente</button>
         </p>
       ) : null}
 
@@ -149,9 +172,8 @@ function Catalog() {
             Tente outra palavra ou veja todas as categorias. Se for uma ideia
             específica, o ateliê pode fazer sob encomenda.
           </p>
-          <Button asChild variant="outline">
-            <Link href="/loja">Limpar filtros</Link>
-          </Button>
+          <Button variant="outline" onClick={() => { setQuery(""); setAvailability(""); setBudget(""); setSavedOnly(false) }}>Limpar busca e filtros</Button>
+          {category ? <Link href="/loja" className="underline">Ver todas as categorias</Link> : null}
         </div>
       ) : null}
     </div>

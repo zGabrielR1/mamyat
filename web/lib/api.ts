@@ -74,6 +74,13 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     }
   }
   if (!response.ok) {
+    const quietAuth = path === "/api/admin/logout" || path === "/api/admin/me"
+    if (response.status === 401 && adminToken && !quietAuth) {
+      writeAdminToken("")
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("mamyat:admin-unauthorized"))
+      }
+    }
     throw new ApiFailure(
       String(data.error || `Não foi possível concluir (${response.status}).`),
       response.status,
@@ -81,6 +88,51 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     )
   }
   return data as T
+}
+
+/** Upload already-compressed image bytes to the admin media endpoint. */
+export async function uploadAdminMedia(file: Blob): Promise<{ url: string; key: string }> {
+  const token = readAdminToken()
+  if (!token) throw new ApiFailure("Entre novamente no painel", 401, "unauthorized")
+
+  let response: Response
+  try {
+    response = await fetch("/api/admin/media", {
+      method: "POST",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+        "X-Admin-Token": token,
+      },
+      body: file,
+      cache: "no-store",
+    })
+  } catch {
+    throw new ApiFailure("Sem conexão com a loja. Confira sua internet e tente de novo.", 0, "network")
+  }
+
+  const text = await response.text()
+  let data: Record<string, unknown> = {}
+  if (text) {
+    try {
+      data = JSON.parse(text) as Record<string, unknown>
+    } catch {
+      data = {}
+    }
+  }
+  if (!response.ok) {
+    if (response.status === 401) {
+      writeAdminToken("")
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("mamyat:admin-unauthorized"))
+      }
+    }
+    throw new ApiFailure(
+      String(data.error || `Não foi possível enviar a foto (${response.status}).`),
+      response.status,
+      String(data.code || "error"),
+    )
+  }
+  return data as { url: string; key: string }
 }
 
 export async function cepLookup(cep: string) {

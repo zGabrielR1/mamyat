@@ -43,16 +43,23 @@ export default function HomePage() {
   const [products, setProducts] = React.useState<Product[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [heroIndex, setHeroIndex] = React.useState(0)
+  const [error, setError] = React.useState("")
+  const [retry, setRetry] = React.useState(0)
 
   React.useEffect(() => {
+    setLoading(true)
+    setError("")
     api<{ products: Product[]; categories: Category[] }>("/api/products?featured=1")
       .then((answer) => {
         setProducts(answer.products.slice(0, 4))
         setCategories(answer.categories)
       })
-      .catch(() => undefined)
+      .catch((failure: Error) => setError(failure.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [retry])
+
+  const hero = products[heroIndex] || products[0]
 
   return (
     <div className="paper-texture">
@@ -81,7 +88,7 @@ export default function HomePage() {
             </Button>
           </div>
           <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-            <span>Pix à vista</span>
+            <span>{config.payment.mode === "mercadopago" ? "Pix e cartão pelo Mercado Pago" : "Pix à vista"}</span>
             <span aria-hidden>·</span>
             <span>Envio para todo o Brasil</span>
             <span aria-hidden>·</span>
@@ -94,17 +101,18 @@ export default function HomePage() {
           <div className="overflow-hidden rounded-[1.6rem] bg-card shadow-sm ring-1 ring-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/produtos/bolsa-aurora.svg"
-              alt="Bolsa Aurora de crochê em tom areia"
+              src={hero?.images[0] || "/produtos/bolsa-aurora.svg"}
+              alt={hero?.name || "Bolsa Aurora de crochê em tom areia"}
               className="aspect-[4/5] w-full object-cover"
             />
           </div>
+          {products.length > 1 ? <div className="absolute right-3 top-3 flex gap-2" aria-label="Escolher peça em destaque">{products.map((p,index) => <button key={p.id} className="hero-choice size-10 overflow-hidden rounded-lg border bg-background shadow-sm transition-colors" aria-label={`Mostrar ${p.name}`} aria-pressed={heroIndex === index} onClick={() => setHeroIndex(index)}><img src={p.images[0]} alt="" className="size-full object-cover" /></button>)}</div> : null}
           <div className="absolute -bottom-5 left-5 rounded-xl border border-border bg-background/95 px-4 py-3 shadow-sm">
             <p className="text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground">
               Peça de ateliê
             </p>
-            <p className="font-serif text-lg">Bolsa Aurora</p>
-            <p className="text-sm text-muted-foreground">{brl(18900)}</p>
+            <a href={hero ? `/produto/${hero.slug}` : "/loja"} className="font-serif text-lg hover:underline">{hero?.name || "Bolsa Aurora"}</a>
+            <p className="text-sm text-muted-foreground">{brl(hero?.price_minor || 18900)}</p>
           </div>
         </div>
       </section>
@@ -137,6 +145,7 @@ export default function HomePage() {
             Ver tudo
           </Link>
         </div>
+        {error ? <div role="alert" className="mt-6 rounded-xl border bg-card p-4 text-sm">{error}<Button variant="outline" className="ml-3" onClick={() => setRetry(v => v+1)}>Tentar novamente</Button></div> : null}
         <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
           {loading
             ? Array.from({ length: 4 }).map((_, index) => (

@@ -7,10 +7,11 @@ import { api } from "@/lib/api"
 import type { Category } from "@/lib/types"
 import { useAdmin } from "@/components/admin/admin-context"
 import { CategoryManager } from "@/components/admin/category-manager"
+import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminCategoriesPage() {
-  const { admin } = useAdmin()
+  const { admin, canWrite } = useAdmin()
   const [categories, setCategories] = React.useState<Category[]>([])
   const [loading, setLoading] = React.useState(true)
 
@@ -47,8 +48,17 @@ export default function AdminCategoriesPage() {
             <Skeleton className="h-11 w-full" />
             <Skeleton className="h-11 w-full" />
           </div>
-        ) : (
+        ) : canWrite ? (
           <CategoryManager categories={categories} onChanged={load} />
+        ) : (
+          <div className="divide-y rounded-lg border">
+            {categories.map((category) => (
+              <div key={category.name} className="flex items-center justify-between px-3 py-2.5 text-sm">
+                <span className="font-medium">{category.name}</span>
+                <Badge variant="outline">{category.count} produto{category.count === 1 ? "" : "s"}</Badge>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

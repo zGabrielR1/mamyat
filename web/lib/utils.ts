@@ -58,6 +58,28 @@ export function formatWhatsapp(value: string): string {
   return value
 }
 
+/** The storefront address when the panel runs on its own origin. */
+export function storefrontHref(path = "/"): string {
+  const base = (process.env.NEXT_PUBLIC_STOREFRONT_URL || "").replace(/\/$/, "")
+  if (!base) return path
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`
+}
+
+function csvCell(value: unknown): string {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`
+}
+
+export function downloadCsv(filename: string, rows: unknown[][]): void {
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n")
+  const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
+
 export function orderStatusTone(status: string): string {
   switch (status) {
     case "paid":

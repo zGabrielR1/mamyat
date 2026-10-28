@@ -16,6 +16,7 @@ from foundry.betterauth import SocialIdentity, payload_for, signature_for
 from api.app import App, AppConfig, ApiError
 from api.accounts import AccountError
 from api.asaas import DemoPayments
+from api.media import MediaError, MediaStore, sniff
 
 
 class FakeMailer:
@@ -283,6 +284,76 @@ class AppTestCase(unittest.TestCase):
         self.assertTrue(answer["changed"])
         self.assertEqual(app.orders.get(order["number"])["status"], "paid")
 
+    def test_mercadopago_confirms_once_and_blocks_manual_confirmation(self):
+        product = self.product()
+        from api.mercadopago import MercadoPagoPayments
+        rail = MercadoPagoPayments({"MERCADOPAGO_ACCESS_TOKEN": "private",
+            "MERCADOPAGO_NOTIFICATION_SECRET": "s" * 64,
+            "PUBLIC_BASE_URL": "https://shop.invalid"},
+            lambda path, body=None: {"id": "pref", "init_point": "https://www.mercadopago.com.br/checkout/test"})
+        self.app.payments = self.app.orders.payments = rail
+        payload = self.order_payload(items=[{"product_id": product["id"], "variant_id": "areia", "qty": 1}])
+        order = self.app.create_order(payload)
+        raw = {"id": 123, "external_reference": order["id"], "metadata": {"order_id": order["id"]},
+               "currency_id": "BRL", "live_mode": True, "transaction_amount": order["total_minor"] / 100, "status": "approved"}
+        rail.transport = lambda path: raw
+        query = {"order": order["number"], "token": rail.notification_token(order)}
+        notification = {"type": "payment", "data": {"id": 123}}
+        with self.assertRaises(ApiError):
+            self.app.admin_mark_paid(order["number"], {})
+        with self.assertRaises(ApiError):
+            self.app.admin_set_status(order["number"], {"status": "paid"})
+        self.assertTrue(self.app.webhook_mercadopago(query, notification)["changed"])
+        self.assertFalse(self.app.webhook_mercadopago(query, notification)["changed"])
+        self.assertEqual(self.app.orders.get(order["number"])["payment"]["payment_id"], "123")
+        raw["status"] = "refunded"
+        self.app.webhook_mercadopago(query, notification)
+        self.assertEqual(self.app.orders.get(order["number"])["status"], "refunded")
+
+    def test_mercadopago_return_checks_provider_and_recovers_missing_webhook(self):
+        product = self.product()
+        from api.mercadopago import MercadoPagoPayments
+        rail = MercadoPagoPayments({"MERCADOPAGO_ACCESS_TOKEN": "private",
+            "MERCADOPAGO_NOTIFICATION_SECRET": "s" * 64,
+            "PUBLIC_BASE_URL": "https://shop.invalid"},
+            lambda path, body=None: {"id": "pref", "init_point": "https://www.mercadopago.com.br/checkout/test"})
+        self.app.payments = self.app.orders.payments = rail
+        order = self.app.create_order(self.order_payload(items=[{"product_id": product["id"], "variant_id": "areia", "qty": 1}]))
+        raw = {"id": 123, "external_reference": order["id"], "metadata": {"order_id": order["id"]},
+               "currency_id": "BRL", "live_mode": True, "transaction_amount": order["total_minor"] / 100, "status": "pending"}
+        calls = []
+        def transport(path):
+            calls.append(path)
+            return raw
+        rail.transport = transport
+        payload = {"email": order["email"], "payment_id": "123", "status": "approved"}
+        with self.assertRaises(ApiError) as denied:
+            self.app.check_payment_status(order["number"], {**payload, "email": "wrong@example.invalid"})
+        self.assertEqual(denied.exception.status, 403)
+        self.assertFalse(calls)
+        with self.assertRaises(ApiError):
+            self.app.check_payment_status(order["number"], {**payload, "payment_id": "../123"})
+        raw["external_reference"] = "other-order"
+        with self.assertRaises(ApiError) as mismatched:
+            self.app.check_payment_status(order["number"], payload)
+        self.assertEqual(mismatched.exception.code, "payment_mismatch")
+        raw["external_reference"] = order["id"]
+        pending = self.app.check_payment_status(order["number"], payload)
+        self.assertEqual(pending["status"], "awaiting_payment")
+        self.assertEqual(pending["payment"]["provider_status"], "pending")
+        count = len(calls)
+        self.app.check_payment_status(order["number"], payload)
+        self.assertEqual(len(calls), count)
+        saved = self.app.orders.get(order["number"])
+        saved["payment"]["last_return_check_at"] = "2000-01-01T00:00:00+00:00"
+        self.app.orders._save(saved)
+        raw["status"] = "approved"
+        recovered = self.app.check_payment_status(order["number"], payload)
+        self.assertEqual(recovered["status"], "paid")
+        self.assertEqual(recovered["payment"]["payment_id"], "123")
+        replay = self.app.webhook_mercadopago({"order": order["number"], "token": rail.notification_token(order)}, {"type": "payment", "data": {"id": 123}})
+        self.assertFalse(replay["changed"])
+
     # -- accounts ----------------------------------------------------
     def signup(self, **overrides) -> dict:
         payload = {"username": "anasouza", "email": "ana@example.com",
@@ -392,6 +463,23 @@ class AppTestCase(unittest.TestCase):
         self.assertIn("BEMVINDA10", self.app.admin_settings()["settings"]["coupons"])
         with self.assertRaises(ApiError):
             self.app.require_admin("not-a-token")
+
+    def test_admin_uploads_media_with_validation(self) -> None:
+        token = self.admin_token()
+        self.app.require_admin(token)
+        png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+        uploaded = self.app.admin_upload_media(png, "image/png")
+        self.assertTrue(uploaded["url"].startswith("/media/"))
+        self.assertEqual(uploaded["size"], len(png))
+        found = self.app.media.open(uploaded["key"])
+        self.assertIsNotNone(found)
+        self.assertEqual(found[1], "image/png")
+        self.assertIsNone(self.app.media.open("../escape.png"))
+        with self.assertRaises(ApiError) as ctx:
+            self.app.admin_upload_media(b"not an image", "image/png")
+        self.assertEqual(ctx.exception.code, "invalid_media")
+        with self.assertRaises(ApiError):
+            self.app.admin_upload_media(png, "image/jpeg")
 
     def test_admin_manages_catalog_and_orders(self) -> None:
         token = self.admin_token()
@@ -532,3 +620,70 @@ class AppTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MediaStoreTestCase(unittest.TestCase):
+    """The media seam (decision 0012): sniff, size, type match, key safety."""
+
+    JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 64
+    PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+    WEBP = b"RIFF" + b"\x10\x00\x00\x00" + b"WEBP" + b"\x00" * 56
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.mkdtemp(prefix="mamyat-media-")
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def store(self) -> MediaStore:
+        return MediaStore(os.path.join(self.tmp, "media"))
+
+    def test_sniff_recognises_raster_types_only(self) -> None:
+        self.assertEqual(sniff(self.JPEG), "image/jpeg")
+        self.assertEqual(sniff(self.PNG), "image/png")
+        self.assertEqual(sniff(self.WEBP), "image/webp")
+        self.assertEqual(sniff(b"not an image at all"), "")
+        self.assertEqual(sniff(b"\xff\xd8"), "")  # truncated header
+
+    def test_save_accepts_each_type_and_writes_file(self) -> None:
+        for data, content_type in [
+            (self.JPEG, "image/jpeg"), (self.PNG, "image/png"),
+            (self.WEBP, "image/webp"),
+        ]:
+            result = self.store().save(data, content_type + "; charset=binary")
+            self.assertTrue(result["url"].startswith("/media/"))
+            self.assertEqual(result["content_type"], content_type)
+            self.assertEqual(result["size"], len(data))
+            path, returned = self.store().open(result["key"])
+            self.assertEqual(returned, content_type)
+            self.assertEqual(path.read_bytes(), data)
+
+    def test_save_rejects_empty_oversized_and_mismatched(self) -> None:
+        store = self.store()
+        with self.assertRaises(MediaError):
+            store.save(b"", "image/png")
+        with self.assertRaises(MediaError):
+            store.save(b"\x89PNG\r\n\x1a\n" + b"\x00" * (6 * 1024 * 1024),
+                       "image/png")
+        # declared type disagrees with the sniffed magic bytes
+        with self.assertRaises(MediaError):
+            store.save(self.PNG, "image/jpeg")
+        # a renamed non-image is refused even with a matching declaration
+        with self.assertRaises(MediaError):
+            store.save(b"#!/bin/sh\n", "application/octet-stream")
+
+    def test_open_is_traversal_and_shape_safe(self) -> None:
+        store = self.store()
+        saved = store.save(self.PNG, "image/png")
+        self.assertIsNotNone(store.open(saved["key"]))
+        self.assertIsNone(store.open("../escape.png"))
+        self.assertIsNone(store.open("../../etc/passwd"))
+        self.assertIsNone(store.open("not-a-valid-key.png"))
+        self.assertIsNone(store.open("abc.jpg"))  # wrong length
+        self.assertIsNone(store.open("does-not-exist.png"))
+
+    def test_available_creates_directory(self) -> None:
+        target = os.path.join(self.tmp, "nested", "media")
+        store = MediaStore(target)
+        self.assertTrue(store.available())
+        self.assertTrue(os.path.isdir(target))

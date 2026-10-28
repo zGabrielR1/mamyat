@@ -3,9 +3,10 @@ import http from 'node:http';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import postgres from 'postgres';
+import { pathToFileURL } from 'node:url';
 import { loadEnv } from './cloudflare.mjs';
 
-const env = { ...loadEnv(), TESTING: 'true', MAIL_DELIVERY: 'disabled', SHOP_ORIGIN_SECRET: 'isolated-test-secret' };
+const env = { ...loadEnv(), MERCADOPAGO_ACCESS_TOKEN: '', TESTING: 'true', MAIL_DELIVERY: 'disabled', SHOP_ORIGIN_SECRET: 'isolated-test-secret' };
 const sql = postgres(env.DATABASE_URL, { max: 3, prepare: false, ssl: 'require', connect_timeout: 10 });
 const schema = 'mamyat_test_' + crypto.randomUUID().replaceAll('-', '');
 let server;
@@ -13,7 +14,7 @@ try {
   await sql.unsafe(`create schema ${schema}`);
   await sql.unsafe(`create table ${schema}.documents (like public.mamyat_documents including all)`);
   await sql.unsafe(`insert into ${schema}.documents select * from public.mamyat_documents`);
-  const source = fs.readFileSync('supabase/functions/shop-api/core.mjs', 'utf8').replaceAll('public.mamyat_documents', `${schema}.documents`).replaceAll('740021', '740099');
+  const source = fs.readFileSync('supabase/functions/shop-api/core.mjs', 'utf8').replaceAll('public.mamyat_documents', `${schema}.documents`).replaceAll('740021', '740099').replace('./mercadopago.mjs', pathToFileURL(process.cwd() + '/supabase/functions/shop-api/mercadopago.mjs').href);
   const { createHandler } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
   const handler = createHandler(sql, env);
   server = http.createServer(async (req, res) => {

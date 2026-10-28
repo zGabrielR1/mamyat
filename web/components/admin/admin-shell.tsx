@@ -4,34 +4,42 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  ExternalLink,
+  Eye,
   LayoutDashboard,
   Loader2,
   LogOut,
   MessageSquare,
   Package,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   Store,
   Tags,
   Users,
+  ClipboardList,
+  Menu,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { AdminProvider, useAdmin } from "@/components/admin/admin-context"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { cn } from "@/lib/utils"
+import { cn, storefrontHref } from "@/lib/utils"
 
 const NAV = [
   { href: "/admin", label: "Visão geral", icon: LayoutDashboard },
+  { href: "/admin/operacao", label: "Operação do ateliê", icon: ClipboardList },
   { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/admin/produtos", label: "Produtos", icon: Package },
   { href: "/admin/categorias", label: "Categorias", icon: Tags },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/contatos", label: "Contatos", icon: MessageSquare },
+  { href: "/admin/avaliacoes", label: "Avaliações", icon: MessageSquare },
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ]
 
@@ -102,12 +110,8 @@ function LoginCard() {
             {busy ? <Loader2 className="size-4 animate-spin" /> : "Entrar"}
           </Button>
         </form>
-        <p className="mt-5 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
-          A senha inicial está no arquivo{" "}
-          <code className="rounded bg-muted px-1">data/runtime/admin_initial_password.txt</code>{" "}
-          ou na variável <code className="rounded bg-muted px-1">ADMIN_PASSWORD</code>.
-        </p>
-        <Link href="/" className="mt-4 block text-center text-xs text-muted-foreground hover:underline">
+        <p className="mt-5 text-center text-sm leading-relaxed text-muted-foreground">Acesso exclusivo para a equipe do ateliê.</p>
+        <Link href={storefrontHref("/")} className="mt-4 block text-center text-xs text-muted-foreground hover:underline">
           Voltar para a loja
         </Link>
       </div>
@@ -116,8 +120,10 @@ function LoginCard() {
 }
 
 function AdminShell({ children }: { children: React.ReactNode }) {
-  const { admin, ready, mustChange, logout } = useAdmin()
+  const { admin, ready, mustChange, canWrite, logout } = useAdmin()
   const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = React.useState(false)
+  React.useEffect(() => setMenuOpen(false), [pathname])
 
   if (!ready) {
     return (
@@ -145,6 +151,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
                 </span>
               </span>
             </Link>
+            <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Menu do painel" aria-expanded={menuOpen} onClick={() => setMenuOpen(v => !v)}><Menu className="size-5" /></Button>
             <Button
               variant="ghost"
               size="sm"
@@ -157,7 +164,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
               <LogOut className="size-4" /> Sair
             </Button>
           </div>
-          <nav className="flex gap-1 overflow-x-auto px-3 py-2 lg:flex-col lg:overflow-visible lg:px-3 lg:py-4">
+          <nav aria-label="Painel" className={cn("flex-col gap-1 px-3 py-4 lg:flex", menuOpen ? "flex" : "hidden")}>
             {NAV.map((item) => {
               const active = item.href === "/admin"
                 ? pathname === "/admin"
@@ -179,18 +186,39 @@ function AdminShell({ children }: { children: React.ReactNode }) {
               )
             })}
           </nav>
-          <div className="flex items-center justify-between gap-2 border-t px-4 py-2 lg:px-5">
+          <div className={cn("items-center justify-between gap-2 border-t px-4 py-2 lg:flex lg:px-5", menuOpen ? "flex" : "hidden")}>
             <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Tema</span>
             <ThemeToggle />
           </div>
-          <div className="hidden px-5 py-4 text-xs text-muted-foreground lg:block">
-            <p>Conectada como</p>
-            <p className="mt-0.5 font-medium text-foreground">@{admin.username}</p>
-            <p className="mt-1 capitalize">{admin.role}</p>
+          <div className="hidden space-y-3 px-5 py-4 text-xs text-muted-foreground lg:block">
+            <div>
+              <p>Conectada como</p>
+              <p className="mt-0.5 font-medium text-foreground">@{admin.username}</p>
+              <p className="mt-1 flex items-center gap-1.5 capitalize">
+                {canWrite ? <ShieldCheck className="size-3.5" /> : <Eye className="size-3.5" />}
+                {canWrite ? "administradora" : "somente leitura"}
+              </p>
+            </div>
+            <a
+              href={storefrontHref("/")}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-primary hover:underline"
+            >
+              Abrir a loja <ExternalLink className="size-3" />
+            </a>
           </div>
         </aside>
 
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
+          {!canWrite ? (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 text-sm">
+              <p className="flex items-center gap-2">
+                <Badge variant="outline">somente leitura</Badge>
+                Esta conta pode consultar dados, mas não alterar a loja.
+              </p>
+            </div>
+          ) : null}
           {mustChange ? (
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
               <p>

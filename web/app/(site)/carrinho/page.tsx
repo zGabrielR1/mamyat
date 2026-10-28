@@ -255,7 +255,7 @@ export default function CartPage() {
             </a>
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            Pagamento por Pix · ambiente {config.payment.environment}
+            {config.payment.mode === "mercadopago" ? "Pix e cartão pelo Mercado Pago" : "Pagamento por Pix"} · ambiente {config.payment.environment}
           </p>
           {config.payment.mode === "demo" ? (
             <Badge variant="outline" className="mt-3 w-full justify-center py-1">

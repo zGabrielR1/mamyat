@@ -27,6 +27,26 @@ export type Product = {
   url: string
   created_at?: string
   updated_at?: string
+  review_stats?: ReviewStats
+}
+
+export type Review = {
+  id: string
+  product_id: string
+  product_name?: string
+  order_id?: string
+  rating: number
+  comment: string
+  name: string
+  status?: "pending" | "approved" | "rejected"
+  created_at: string
+  updated_at?: string
+}
+
+export type ReviewStats = {
+  count: number
+  average: number
+  distribution: { 1: number; 2: number; 3: number; 4: number; 5: number }
 }
 
 export type Category = { name: string; count: number }
@@ -50,7 +70,7 @@ export type StoreConfig = {
     delivery_days: string
     pickup_address: string
   }
-  payment: { mode: "asaas" | "demo"; environment: string }
+  payment: { mode: "asaas" | "mercadopago" | "demo"; environment: string }
   turnstile: { enabled: boolean; site_key: string }
   categories: string[]
   features: {
@@ -91,6 +111,12 @@ export type Quote = {
 }
 
 export type OrderPayment = {
+  checkout_url?: string
+  review_required?: boolean
+  payment_id?: string
+  provider_status?: string
+  last_checked_at?: string
+  expired?: boolean
   provider: string
   status: string
   provider_ref?: string
@@ -115,6 +141,8 @@ export type Order = {
   total: string
   email: string
   name: string
+  phone?: string
+  cpf?: string
   tracking_code: string
   shipping_method: string
   shipping: Record<string, string>
@@ -179,7 +207,7 @@ export type Dashboard = {
   top_products: { name: string; qty: number; revenue_minor: number }[]
   recent_orders: Order[]
   default_admin: boolean
-  payment_mode: "asaas" | "demo"
+  payment_mode: "asaas" | "mercadopago" | "demo"
 }
 
 export type CartItem = {

@@ -4,10 +4,14 @@
   "scripts": {
     "deploy": "node scripts/deploy_free.mjs",
     "deploy:check": "node scripts/deploy_free.mjs check",
+    "deploy:edge": "node scripts/deploy_edge.mjs",
+    "login:edge": "node scripts/deploy_edge.mjs login",
     "setup:services": "node scripts/cloudflare.mjs setup",
     "typecheck": "tsc --noEmit",
     "deploy:container": "node scripts/cloudflare.mjs deploy",
-    "test:free": "node scripts/test_free_api.mjs"
+    "test:free": "node scripts/test_free_api.mjs",
+    "test:payments": "node scripts/test_mercadopago.mjs",
+    "test:reviews": "node scripts/test_reviews.mjs"
   },
   "dependencies": {
     "@cloudflare/containers": "^0.3.7"
@@ -17,5 +21,9 @@
     "postgres": "^3.4.7",
     "typescript": "^5.7.2",
     "wrangler": "^4.151.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261019.1": true
   }
 }

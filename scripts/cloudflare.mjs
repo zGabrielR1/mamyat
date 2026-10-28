@@ -7,7 +7,7 @@ import { randomBytes } from "node:crypto";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 process.chdir(root);
-const files = [".env", ".env.local", ".env.resend", ".env.turnstile", ".env.asaas", ".env.betterauth", ".env.supabase", ".env.cloudflare"];
+const files = [".env", ".env.local", ".env.resend", ".env.turnstile", ".env.asaas", ".env.mercadopago.prod", ".env.betterauth", ".env.supabase", ".env.cloudflare"];
 export function loadEnv() {
   const result = {};
   for (const file of files) {
@@ -20,6 +20,7 @@ export function loadEnv() {
       result[match[1]] = value;
     }
   }
+  result.MERCADOPAGO_ACCESS_TOKEN ||= result.ACESS_TOKEN || "";
   return { ...result, ...process.env };
 }
 let env = loadEnv();

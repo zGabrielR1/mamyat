@@ -26,6 +26,7 @@ from .app import App, AppConfig, ApiError
 from .betterauth_proxy import BetterAuthProxy
 
 MAX_BODY = 1_000_000
+MAX_MEDIA_BODY = 5 * 1024 * 1024
 CORS_ORIGINS = tuple(origin.strip() for origin in
                      os.environ.get("CORS_ORIGINS", "").split(",") if origin.strip())
 
@@ -64,15 +65,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send(self, status: int, body: bytes = b"", *,
               content_type: str = "application/json; charset=utf-8",
-              extra: dict | None = None) -> None:
+              extra: dict | None = None, cache_control: str = "") -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("X-Frame-Options", "DENY")
-        self.send_header("Cache-Control", "no-store" if content_type.startswith("application/json")
-                         else "public, max-age=300")
+        self.send_header("Cache-Control", cache_control or (
+            "no-store" if content_type.startswith("application/json")
+            else "public, max-age=300"))
         origin = self.headers.get("Origin", "")
         if origin and (not CORS_ORIGINS or origin in CORS_ORIGINS):
             self.send_header("Access-Control-Allow-Origin", origin)
@@ -130,12 +132,12 @@ class Handler(BaseHTTPRequestHandler):
             raise ApiError(400, "envie um objeto JSON", "bad_json")
         return parsed
 
-    def _raw_body(self) -> bytes:
+    def _raw_body(self, limit: int = MAX_BODY) -> bytes:
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             raise ApiError(400, "corpo inválido", "bad_body") from None
-        if length > MAX_BODY:
+        if length > limit:
             raise ApiError(413, "corpo grande demais", "too_large")
         return self.rfile.read(length) if length else b""
 
@@ -194,6 +196,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._api(method, path, query)
             elif path == "/api":
                 self._json(200, {"service": "mamyat", "docs": "/api/health"})
+            elif path.startswith("/media/"):
+                self._media(method, path[len("/media/"):])
             else:
                 self._static(path)
         except ApiError as exc:
@@ -250,6 +254,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, app.retry_payment(
                     number, customer=self._customer(),
                     email=str(body.get("email") or "")))
+            if method == "POST" and len(parts) == 3 and parts[2] == "payment-status":
+                self._limit("payment-status", 15, 300)
+                return self._json(200, app.check_payment_status(
+                    number, self._body(), customer=self._customer()))
+
+        if method == "POST" and path == "/api/webhooks/mercadopago":
+            return self._json(200, app.webhook_mercadopago(query, self._body()))
 
         # Asaas webhook ---------------------------------------------------
         if method == "POST" and path == "/api/webhooks/asaas":
@@ -296,6 +307,17 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(201, app.contact(self._body(),
                                                remote_ip=self._client_ip()))
 
+        # reviews --------------------------------------------------------
+        if method == "GET" and path == "/api/reviews":
+            product_id = str(query.get("product_id") or "")
+            return self._json(200, app.list_reviews(product_id=product_id))
+        if method == "POST" and path == "/api/reviews":
+            self._limit("review", 10, 3600)
+            return self._json(201, app.create_review(
+                self._body(), customer=self._require_customer()))
+        if len(parts) == 2 and parts[0] == "reviews" and method == "GET":
+            return self._json(200, app.get_review(parts[1]))
+
         # social sign-in sidecar ------------------------------------------
         if path.startswith("/api/betterauth/"):
             self._limit("betterauth", 120, 60)
@@ -332,6 +354,9 @@ class Handler(BaseHTTPRequestHandler):
             self._limit("admin-login", 10, 300)
             return self._json(200, app.admin_login(self._body()))
         admin, token = self._admin_auth()
+        if method not in {"GET", "HEAD"} and admin.get("role") != "admin" and \
+                parts not in (["logout"], ["password"]):
+            raise ApiError(403, "esta conta é somente leitura", "forbidden")
         if method == "POST" and parts == ["logout"]:
             return self._json(200, app.admin_logout(token))
         if method == "GET" and parts == ["me"]:
@@ -342,6 +367,20 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, app.admin_change_password(admin, self._body()))
         if method == "GET" and parts == ["dashboard"]:
             return self._json(200, app.admin_dashboard())
+        if parts == ["reviews"] and method == "GET":
+            return self._json(200, app.admin_reviews())
+        if len(parts) == 2 and parts[0] == "reviews" and method == "DELETE":
+            return self._json(200, app.delete_review(parts[1]))
+        if len(parts) == 3 and parts[0] == "reviews" and method == "POST":
+            if parts[2] == "approve":
+                return self._json(200, app.approve_review(parts[1]))
+            if parts[2] == "reject":
+                return self._json(200, app.reject_review(parts[1]))
+        if parts == ["media"] and method == "POST":
+            self._limit("media-upload", 60, 3600)
+            return self._json(201, app.admin_upload_media(
+                self._raw_body(MAX_MEDIA_BODY),
+                self.headers.get("Content-Type", "")))
         if parts == ["products"]:
             if method == "GET":
                 return self._json(200, app.admin_products())
@@ -408,6 +447,21 @@ class Handler(BaseHTTPRequestHandler):
         if not token:
             raise ApiError(401, "entre novamente no painel", "unauthorized")
         return self.app.require_admin(token), token
+
+    # -- media -------------------------------------------------------
+    def _media(self, method: str, key: str) -> None:
+        if method not in {"GET", "HEAD"}:
+            raise ApiError(405, "método não permitido", "method_not_allowed")
+        found = self.app.media.open(key)
+        if not found:
+            raise ApiError(404, "imagem não encontrada", "not_found")
+        path, content_type = found
+        try:
+            body = path.read_bytes()
+        except OSError as exc:
+            raise ApiError(404, "imagem não encontrada", "not_found") from exc
+        self._send(200, body, content_type=content_type,
+                   cache_control="public, max-age=31536000, immutable")
 
     # -- static ------------------------------------------------------
     def _static(self, path: str) -> None:

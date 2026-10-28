@@ -1,4 +1,7 @@
-/** Free Workers static assets + private Supabase Edge API. No domain purchase. */
+/** Free Workers static assets + private Supabase Edge API. No domain purchase.
+ * Publishes two workers from one build: the storefront and a dedicated admin
+ * origin, so the back office never shares the shop's public address.
+ */
 import fs from "node:fs";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
@@ -8,14 +11,36 @@ const env = {...loadEnv(), CLOUDFLARE_FREE_BUILD:"1"};
 env.XDG_CONFIG_HOME ||= path.resolve(".tmp/xdg");
 env.WRANGLER_LOG_PATH ||= path.resolve(".tmp/wrangler.log");
 env.WRANGLER_SEND_METRICS = "false";
-env.NEXT_PUBLIC_SITE_URL = env.PUBLIC_BASE_URL || "https://mamyat.henriquealveslohrayne.workers.dev";
+const storefrontUrl = (env.PUBLIC_BASE_URL || "https://mamyat.henriquealveslohrayne.workers.dev").replace(/\/$/, "");
+env.NEXT_PUBLIC_SITE_URL = storefrontUrl;
+env.NEXT_PUBLIC_STOREFRONT_URL = storefrontUrl;
+
+/** `mamyat.<account>.workers.dev` -> `mamyat-admin.<account>.workers.dev`. */
+function defaultAdminUrl(storefront) {
+  const url = new URL(storefront);
+  if (url.hostname.endsWith(".workers.dev") && url.hostname.split(".").length >= 4) {
+    return `${url.protocol}//mamyat-admin.${url.hostname.split(".").slice(1).join(".")}`;
+  }
+  return `${url.protocol}//admin.${url.hostname}`;
+}
+const adminUrl = (env.ADMIN_BASE_URL || defaultAdminUrl(storefrontUrl)).replace(/\/$/, "");
+env.NEXT_PUBLIC_ADMIN_URL = adminUrl;
+
 function run(args, cwd=process.cwd()) {
   const r=spawnSync(process.execPath,args,{cwd,env,stdio:"inherit"});
   if(r.status!==0) throw new Error(`Command failed (${r.status}): ${args[0]}`);
 }
+function freeConfig(file) {
+  const config=JSON.parse(fs.readFileSync(file,"utf8"));
+  if(config.containers || config.routes || !config.workers_dev) throw new Error(`Expected free workers.dev configuration in ${file}`);
+  return config;
+}
+function wrangler(args) {
+  run(["node_modules/wrangler/bin/wrangler.js",...args]);
+}
 try {
-  const config=JSON.parse(fs.readFileSync("wrangler.free.jsonc","utf8"));
-  if(config.containers || config.routes || !config.workers_dev) throw new Error("Expected free workers.dev configuration");
+  freeConfig("wrangler.free.jsonc");
+  freeConfig("wrangler.admin.jsonc");
   if(!env.SHOP_ORIGIN_SECRET) throw new Error("SHOP_ORIGIN_SECRET missing in private environment");
   run(["node_modules/typescript/bin/tsc","--noEmit"]);
   run(["node_modules/next/dist/bin/next","build"],path.resolve("web"));
@@ -38,14 +63,25 @@ try {
     }
   }
   aliases("web/out");
+  const common = ["deploy","--no-autoconfig"];
+  const storefrontArgs = [...common,"-c","wrangler.free.jsonc","--var",`ADMIN_URL:${adminUrl}`];
+  const adminArgs = [...common,"-c","wrangler.admin.jsonc"];
   if(process.argv[2]==="check") {
-    run(["node_modules/wrangler/bin/wrangler.js","deploy","-c","wrangler.free.jsonc","--dry-run","--no-autoconfig"]);
+    wrangler([...storefrontArgs,"--dry-run"]);
+    wrangler([...adminArgs,"--dry-run"]);
+    console.log(`Storefront publish target: ${storefrontUrl}`);
+    console.log(`Admin publish target: ${adminUrl}`);
   } else {
     fs.mkdirSync(".tmp",{recursive:true});
     const secretFile=path.resolve(".tmp/free-worker-secrets.json");
     try {
       fs.writeFileSync(secretFile,JSON.stringify({SHOP_ORIGIN_SECRET:env.SHOP_ORIGIN_SECRET}),{mode:0o600});
-      run(["node_modules/wrangler/bin/wrangler.js","deploy","-c","wrangler.free.jsonc","--secrets-file",secretFile,"--no-autoconfig"]);
+      // Publish the admin origin first: if the storefront step fails, the old
+      // storefront keeps serving /admin instead of redirecting to nothing.
+      wrangler([...adminArgs,"--secrets-file",secretFile]);
+      wrangler([...storefrontArgs,"--secrets-file",secretFile]);
     } finally {fs.rmSync(secretFile,{force:true});}
+    console.log(`Storefront: ${storefrontUrl}`);
+    console.log(`Admin panel: ${adminUrl}/admin/`);
   }
 } catch(error) {console.error(error.message);process.exitCode=1;}

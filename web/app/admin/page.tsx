@@ -2,7 +2,20 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { AlertTriangle, ArrowUpRight, Banknote, Package, ShoppingBag, Users } from "lucide-react"
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Banknote,
+  ExternalLink,
+  Package,
+  Plus,
+  RefreshCw,
+  Settings2,
+  ShieldAlert,
+  ShoppingBag,
+  Tags,
+  Users,
+} from "lucide-react"
 
 import { api } from "@/lib/api"
 import type { Dashboard } from "@/lib/types"
@@ -11,21 +24,45 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { brl, orderStatusTone } from "@/lib/utils"
+import { brl, orderStatusTone, storefrontHref } from "@/lib/utils"
+
+const PIPELINE = [
+  { value: "awaiting_payment", label: "Aguardando pagamento" },
+  { value: "paid", label: "Pago" },
+  { value: "packing", label: "Em produção" },
+  { value: "shipped", label: "Enviado" },
+  { value: "delivered", label: "Entregue" },
+  { value: "cancelled", label: "Cancelado" },
+  { value: "refunded", label: "Reembolsado" },
+]
 
 export default function AdminDashboardPage() {
-  const { admin } = useAdmin()
+  const { admin, canWrite } = useAdmin()
   const [data, setData] = React.useState<Dashboard | null>(null)
   const [error, setError] = React.useState("")
+  const [refreshing, setRefreshing] = React.useState(false)
+  const [updatedAt, setUpdatedAt] = React.useState<Date | null>(null)
+
+  const load = React.useCallback(async (quiet = false) => {
+    if (!quiet) setRefreshing(true)
+    try {
+      const answer = await api<Dashboard>("/api/admin/dashboard")
+      setData(answer)
+      setUpdatedAt(new Date())
+      setError("")
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Não foi possível carregar")
+    } finally {
+      setRefreshing(false)
+    }
+  }, [])
 
   React.useEffect(() => {
-    if (!admin) return
-    api<Dashboard>("/api/admin/dashboard")
-      .then(setData)
-      .catch((failure: Error) => setError(failure.message))
-  }, [admin])
+    if (admin) void load(true)
+  }, [admin, load])
 
   if (!data) {
+    if (error) return <div role="alert" className="ops-note"><h1>Visão geral</h1><p className="my-4">{error}</p><Button variant="outline" onClick={() => void load()} disabled={refreshing}>Tentar novamente</Button></div>
     return (
       <div className="space-y-6">
         <Skeleton className="h-9 w-52" />
@@ -34,6 +71,7 @@ export default function AdminDashboardPage() {
             <Skeleton key={index} className="h-28 rounded-xl" />
           ))}
         </div>
+        <Skeleton className="h-24 rounded-xl" />
         <Skeleton className="h-72 rounded-xl" />
       </div>
     )
@@ -46,6 +84,49 @@ export default function AdminDashboardPage() {
     { label: "Clientes", value: String(data.customers), icon: Users, hint: "contas criadas" },
   ]
 
+  const alerts = [
+    data.awaiting > 0
+      ? {
+          key: "awaiting",
+          icon: ShoppingBag,
+          text: `${data.awaiting} pedido(s) aguardando confirmação de pagamento.`,
+          href: "/admin/pedidos?status=awaiting_payment",
+          action: "Ver pedidos",
+        }
+      : null,
+    data.low_stock.length > 0
+      ? {
+          key: "stock",
+          icon: AlertTriangle,
+          text: `${data.low_stock.length} variação(ões) com estoque baixo ou esgotado.`,
+          href: "/admin/produtos",
+          action: "Repor estoque",
+        }
+      : null,
+    data.default_admin
+      ? {
+          key: "password",
+          icon: ShieldAlert,
+          text: "A senha inicial do painel ainda está ativa.",
+          href: "/admin/configuracoes",
+          action: "Trocar senha",
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    key: string
+    icon: typeof AlertTriangle
+    text: string
+    href: string
+    action: string
+  }>
+
+  const quickActions = [
+    { href: "/admin/produtos", label: "Novo produto", icon: Plus, show: canWrite },
+    { href: "/admin/categorias", label: "Categorias", icon: Tags, show: canWrite },
+    { href: "/admin/clientes", label: "Clientes", icon: Users, show: true },
+    { href: "/admin/configuracoes", label: "Configurações", icon: Settings2, show: true },
+  ].filter((action) => action.show)
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -55,16 +136,44 @@ export default function AdminDashboardPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {data.payment_mode === "demo"
               ? "Pagamentos em modo demonstração — confirme pedidos manualmente."
-              : "Pagamentos Asaas ativos."}
+              : "Pagamentos ativos."}
+            {updatedAt ? ` Atualizado às ${updatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.` : ""}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm"><Link href="/" target="_blank">Ver a loja <ArrowUpRight className="size-3.5" /></Link></Button>
-          <Button asChild size="sm"><Link href="/admin/pedidos">Ver pedidos</Link></Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <a href={storefrontHref("/")} target="_blank" rel="noreferrer">
+              Ver a loja <ExternalLink className="size-3.5" />
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={refreshing}>
+            <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
+          <Button asChild size="sm"><Link href="/admin/operacao">Abrir operação <ArrowUpRight className="size-3.5" /></Link></Button>
         </div>
       </div>
 
       {error ? <p className="rounded-lg bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</p> : null}
+
+      {alerts.length > 0 ? (
+        <div className="grid gap-3">
+          {alerts.map((alert) => (
+            <div
+              key={alert.key}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100"
+            >
+              <p className="flex items-center gap-2">
+                <alert.icon className="size-4 shrink-0" />
+                {alert.text}
+              </p>
+              <Button asChild size="sm" variant="outline">
+                <Link href={alert.href}>{alert.action}</Link>
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (
@@ -80,6 +189,32 @@ export default function AdminDashboardPage() {
           </div>
         ))}
       </div>
+
+      <section className="rounded-xl border bg-card">
+        <div className="flex items-center justify-between border-b px-5 py-4">
+          <h2 className="font-serif text-xl">Fluxo de pedidos</h2>
+          <Link href="/admin/pedidos" className="text-xs text-muted-foreground hover:underline">
+            Ver todos
+          </Link>
+        </div>
+        <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          {PIPELINE.map((stage) => {
+            const count = data.by_status[stage.value] ?? 0
+            return (
+              <Link
+                key={stage.value}
+                href={`/admin/pedidos?status=${stage.value}`}
+                className="group bg-card px-4 py-4 transition-colors hover:bg-secondary/50"
+              >
+                <p className="text-2xl font-medium">{count}</p>
+                <p className="mt-1 text-xs text-muted-foreground group-hover:text-foreground">
+                  {stage.label}
+                </p>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
         <section className="rounded-xl border bg-card">
@@ -116,6 +251,21 @@ export default function AdminDashboardPage() {
         </section>
 
         <div className="space-y-6">
+          <section className="rounded-xl border bg-card">
+            <div className="border-b px-5 py-4">
+              <h2 className="font-serif text-xl">Ações rápidas</h2>
+            </div>
+            <div className="grid gap-2 p-4">
+              {quickActions.map((action) => (
+                <Button key={action.href} asChild variant="outline" className="justify-start">
+                  <Link href={action.href}>
+                    <action.icon className="size-4" /> {action.label}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+          </section>
+
           <section className="rounded-xl border bg-card">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <h2 className="font-serif text-xl">Estoque baixo</h2>

@@ -1,8 +1,9 @@
 # Free launch update
 
-Free Supabase project and Cloudflare Worker are already created. No Docker,
-paid plan or domain is required for this launch. Wrangler OAuth and publication are complete. Custom domain,
-verified email sender and real payments are deferred. Historical checklist:
+Free Supabase project and the two Cloudflare Workers (storefront and admin) are
+already created. No Docker, paid plan or domain is required for this launch.
+Wrangler OAuth and publication are complete. Custom domain, verified email
+sender and real payments are deferred. Historical checklist:
 
 # Needed from the owner
 
@@ -11,6 +12,10 @@ Values belong in gitignored `.env*` files locally and in the hosting dashboard
 (never in the repository).
 
 ## Accounts and access
+
+- [ ] Supabase access token for Edge deploys (`npx supabase login`, or
+      `SUPABASE_ACCESS_TOKEN` in the private environment). The bucket migration
+      is already applied; this is only needed to publish the upload endpoint.
 
 - [ ] Supabase organization/project for the shop
   - [ ] project URL and database password (pooler connection string)
@@ -63,7 +68,10 @@ Values belong in gitignored `.env*` files locally and in the hosting dashboard
 - [ ] the admin password to set (`ADMIN_PASSWORD`, 8+ characters) — or keep the
         generated one from the first boot
 - [ ] pickup address and delivery estimate
-- [ ] real product photos (the seed ships SVG illustrations) - Will be given in the Admin panel where the owner can create new products.
+- [x] admin photo upload path built (Supabase Storage `product-media`, `/media/<key>`);
+      the owner can add real photos in the product editor once the Edge function
+      is published with `npm run deploy:edge` (needs `npx supabase login`).
+- [ ] the actual real product photos (the seed still ships SVG illustrations).
 - [ ] final prices, shipping fee and free-shipping threshold  - Will be given in the Admin panel where the owner can create new products.
 - [ ] legal text for `/politicas` (exchange/return policy, privacy) - Generate a template for one
 
